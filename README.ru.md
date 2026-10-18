@@ -129,4 +129,4 @@ fn parse_and_serialize(source: &[u8]) -> anyhow::Result<String> {
 
 ## Лицензия
 
-MIT
+[GNU General Public License v3.0](LICENSE)
