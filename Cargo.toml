@@ -1,0 +1,19 @@
+[package]
+name = "c-parser-workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C-parser workspace — zero-copy, arena-based C parser"
+publish = false
+
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "MIT"
+
+[dependencies]
+c-parser = { path = "crates/c-parser" }

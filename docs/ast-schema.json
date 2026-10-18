@@ -1,0 +1,782 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://c-parser.local/schemas/ast-schema-1.0.json",
+  "title": "c-parser AST JSON Schema (v1.0)",
+  "description": "JSON Schema (Draft 2020-12) for the AST JSON emitted by the c-parser module. Schema version 1.0.\n\nImportant notes:\n\n1) Invariants NOT enforceable by pure JSON Schema (validated by `tests/schema_validation.rs` and the parser itself):\n   - `span.start <= span.end` for every `Span`;\n   - `span.end <= source_length` for every `Span`;\n   - `root` and each `children[]` entry reference an existing index in `nodes[]`;\n   - `ErrorNode.data.error_index` references an existing entry in `errors[]`;\n   - for `Preprocessor*` kinds, `data.directive` matches the kind suffix (e.g. `PreprocessorInclude` → `\"include\"`).\n\n2) Null-data nodes: structural kinds without extra attributes (e.g. `CompoundStatement`, `IfStatement`, `ParenExpr`, `TypeSpecifier`, `NullStatement`) MUST carry `\"data\": null`, matching the example in ТЗ §5.1 (`TranslationUnit.data = null`). This is enforced via a per-kind `oneOf` in the `Node` definition. If a structural kind is later extended with typed attributes, add a corresponding `Data<Kind>` schema, register it in `NodeData.oneOf`, and update the per-kind enforcement branch — atomically.\n\n3) String materialization: all string fields (`name`, `value`, ...) are produced by `ast_to_json` from the original source using `String::from_utf8_lossy` by Span. JSON is self-contained; consumers do not need the original source buffer.\n\n4) Optional fields on `Data*` objects (`suffix`, `encoding`, `is_macro`, ...) are deliberately NOT in `required`, so that adding new optional attributes is a backward-compatible, MINOR change per semver. Consumers MUST tolerate their absence and apply documented defaults (e.g. `is_macro` absent → treat as `false` / \"unknown, likely plain function call\").",
+
+  "type": "object",
+  "required": [
+    "version",
+    "language",
+    "source_length",
+    "root",
+    "nodes",
+    "errors"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "AST schema version. Bumped on incompatible changes; `code-bridge` rejects mismatched MAJOR versions."
+    },
+    "language": {
+      "type": "string",
+      "const": "c",
+      "description": "Source language identifier. Fixed to \"c\" for this parser; the field exists for the multi-language `code-bridge` family (cpp-parser, rust-parser, ...)."
+    },
+    "source_length": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Length of the original source buffer in bytes. Hard upper bound for every `span.end` (checked by the custom validator)."
+    },
+    "root": {
+      "$ref": "#/$defs/NodeId",
+      "description": "Index into `nodes` of the root node. Must reference an existing node (checked by the custom validator)."
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Node" },
+      "description": "Flat arena of AST nodes. `root` and every `children[]` entry must reference existing indices into this array."
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Error" },
+      "description": "Non-fatal diagnostics collected during lexing/parsing. Fatal errors are surfaced via the API/CLI, not through this array."
+    }
+  },
+
+  "$defs": {
+    "NodeId": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based index into the `nodes` array."
+    },
+
+    "Span": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "description": "Half-open byte range [start, end) into the original source buffer. Invariants `start <= end` and `end <= source_length` are checked by the custom validator, not by JSON Schema.",
+      "properties": {
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "NodeKind": {
+      "type": "string",
+      "description": "Structural kind of the AST node. Naming convention: `kind` and `data.type` usually coincide, but several kinds use a shortened `data.type`: `FunctionDefinition` → `FunctionDef`, `VariableDeclaration` → `VariableDecl`, `ParameterDeclaration` → `ParameterDecl`, `TypedefDeclaration` → `TypedefDecl`, `StructDeclaration` → `StructDef`, `UnionDeclaration` → `UnionDef`, `EnumDeclaration` → `EnumDef`. Kinds without a corresponding `Data*` schema are structural and must carry `data: null` (e.g. `CompoundStatement`, `IfStatement`, `ParenExpr`, `TypeSpecifier`, `NullStatement`).",
+      "enum": [
+        "TranslationUnit",
+        "FunctionDefinition",
+        "VariableDeclaration",
+        "ParameterDeclaration",
+        "TypedefDeclaration",
+        "StructDeclaration",
+        "UnionDeclaration",
+        "EnumDeclaration",
+        "Enumerator",
+        "CompoundStatement",
+        "IfStatement",
+        "WhileStatement",
+        "DoWhileStatement",
+        "ForStatement",
+        "SwitchStatement",
+        "CaseStatement",
+        "DefaultStatement",
+        "ReturnStatement",
+        "BreakStatement",
+        "ContinueStatement",
+        "GotoStatement",
+        "LabelStatement",
+        "ExpressionStatement",
+        "NullStatement",
+        "Identifier",
+        "IntegerLiteral",
+        "FloatLiteral",
+        "StringLiteral",
+        "CharLiteral",
+        "BinaryExpr",
+        "UnaryExpr",
+        "AssignmentExpr",
+        "CallExpr",
+        "MemberExpr",
+        "IndexExpr",
+        "CastExpr",
+        "TernaryExpr",
+        "SizeofExpr",
+        "ParenExpr",
+        "TypeSpecifier",
+        "PointerType",
+        "ArrayType",
+        "FunctionType",
+        "InitializerList",
+        "PreprocessorInclude",
+        "PreprocessorDefine",
+        "PreprocessorUndef",
+        "PreprocessorIf",
+        "PreprocessorIfdef",
+        "PreprocessorIfndef",
+        "PreprocessorElse",
+        "PreprocessorElif",
+        "PreprocessorEndif",
+        "PreprocessorPragma",
+        "PreprocessorLine",
+        "PreprocessorError",
+        "PreprocessorWarning",
+        "ErrorNode"
+      ]
+    },
+
+    "Node": {
+      "type": "object",
+      "required": ["kind", "span", "children", "data"],
+      "additionalProperties": false,
+      "description": "A single AST node. `children` holds structural child indices (empty for leaves). Payload, if any, lives in `data` and MUST be discriminated by its `type` field. Per-kind enforcement of the (kind, data) pairing is implemented via the `allOf` block below.",
+      "properties": {
+        "kind": { "$ref": "#/$defs/NodeKind" },
+        "span": { "$ref": "#/$defs/Span" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NodeId" },
+          "description": "Ordered list of child node indices. May be empty."
+        },
+        "data": {
+          "description": "Tagged union payload, or `null` for structural kinds without attributes. See the per-kind enforcement in the `allOf` block below.",
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/NodeData" }]
+        }
+      },
+      "allOf": [
+        {
+          "description": "Per-kind enforcement: exactly one branch must match. Structural kinds require `data: null`; kinds carrying attributes require the corresponding `Data<Kind>` object.",
+          "oneOf": [
+            {
+              "description": "Structural kinds — no payload, `data` MUST be `null`.",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "TranslationUnit",
+                    "CompoundStatement",
+                    "IfStatement",
+                    "WhileStatement",
+                    "DoWhileStatement",
+                    "ForStatement",
+                    "SwitchStatement",
+                    "CaseStatement",
+                    "DefaultStatement",
+                    "ReturnStatement",
+                    "BreakStatement",
+                    "ContinueStatement",
+                    "GotoStatement",
+                    "LabelStatement",
+                    "ExpressionStatement",
+                    "NullStatement",
+                    "ParenExpr",
+                    "TypeSpecifier",
+                    "PointerType",
+                    "ArrayType",
+                    "FunctionType",
+                    "InitializerList"
+                  ]
+                },
+                "data": { "type": "null" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "Identifier" },
+                "data": { "$ref": "#/$defs/DataIdentifier" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "IntegerLiteral" },
+                "data": { "$ref": "#/$defs/DataIntegerLiteral" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "FloatLiteral" },
+                "data": { "$ref": "#/$defs/DataFloatLiteral" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "StringLiteral" },
+                "data": { "$ref": "#/$defs/DataStringLiteral" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "CharLiteral" },
+                "data": { "$ref": "#/$defs/DataCharLiteral" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "BinaryExpr" },
+                "data": { "$ref": "#/$defs/DataBinaryExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "UnaryExpr" },
+                "data": { "$ref": "#/$defs/DataUnaryExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "AssignmentExpr" },
+                "data": { "$ref": "#/$defs/DataAssignmentExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "CallExpr" },
+                "data": { "$ref": "#/$defs/DataCallExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "MemberExpr" },
+                "data": { "$ref": "#/$defs/DataMemberExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "IndexExpr" },
+                "data": { "$ref": "#/$defs/DataIndexExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "CastExpr" },
+                "data": { "$ref": "#/$defs/DataCastExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "TernaryExpr" },
+                "data": { "$ref": "#/$defs/DataTernaryExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "SizeofExpr" },
+                "data": { "$ref": "#/$defs/DataSizeofExpr" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "FunctionDefinition" },
+                "data": { "$ref": "#/$defs/DataFunctionDef" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "VariableDeclaration" },
+                "data": { "$ref": "#/$defs/DataVariableDecl" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "ParameterDeclaration" },
+                "data": { "$ref": "#/$defs/DataParameterDecl" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "TypedefDeclaration" },
+                "data": { "$ref": "#/$defs/DataTypedefDecl" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "StructDeclaration" },
+                "data": { "$ref": "#/$defs/DataStructDef" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "UnionDeclaration" },
+                "data": { "$ref": "#/$defs/DataUnionDef" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "EnumDeclaration" },
+                "data": { "$ref": "#/$defs/DataEnumDef" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "Enumerator" },
+                "data": { "$ref": "#/$defs/DataEnumerator" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorInclude" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorDefine" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorUndef" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorIf" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorIfdef" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorIfndef" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorElse" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorElif" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorEndif" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorPragma" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorLine" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorError" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "PreprocessorWarning" },
+                "data": { "$ref": "#/$defs/DataPreprocessorDirective" }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "const": "ErrorNode" },
+                "data": { "$ref": "#/$defs/DataErrorNode" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "NodeData": {
+      "description": "Tagged union of node payloads. Each branch is a JSON object with a required `type` field acting as the discriminator. Exactly one branch must match. This definition is used for top-level `data` validation; per-kind strictness (kind ↔ data pairing) is additionally enforced in `Node.allOf`.",
+      "oneOf": [
+        { "$ref": "#/$defs/DataIdentifier" },
+        { "$ref": "#/$defs/DataIntegerLiteral" },
+        { "$ref": "#/$defs/DataFloatLiteral" },
+        { "$ref": "#/$defs/DataStringLiteral" },
+        { "$ref": "#/$defs/DataCharLiteral" },
+        { "$ref": "#/$defs/DataBinaryExpr" },
+        { "$ref": "#/$defs/DataUnaryExpr" },
+        { "$ref": "#/$defs/DataAssignmentExpr" },
+        { "$ref": "#/$defs/DataCallExpr" },
+        { "$ref": "#/$defs/DataMemberExpr" },
+        { "$ref": "#/$defs/DataIndexExpr" },
+        { "$ref": "#/$defs/DataCastExpr" },
+        { "$ref": "#/$defs/DataTernaryExpr" },
+        { "$ref": "#/$defs/DataSizeofExpr" },
+        { "$ref": "#/$defs/DataFunctionDef" },
+        { "$ref": "#/$defs/DataVariableDecl" },
+        { "$ref": "#/$defs/DataParameterDecl" },
+        { "$ref": "#/$defs/DataTypedefDecl" },
+        { "$ref": "#/$defs/DataStructDef" },
+        { "$ref": "#/$defs/DataUnionDef" },
+        { "$ref": "#/$defs/DataEnumDef" },
+        { "$ref": "#/$defs/DataEnumerator" },
+        { "$ref": "#/$defs/DataPreprocessorDirective" },
+        { "$ref": "#/$defs/DataErrorNode" }
+      ]
+    },
+
+    "DataIdentifier": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: Identifier`.",
+      "properties": {
+        "type": { "const": "Identifier" },
+        "name": {
+          "type": "string",
+          "description": "Materialized identifier text extracted from the source by Span (lossy UTF-8)."
+        }
+      }
+    },
+
+    "DataIntegerLiteral": {
+      "type": "object",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: IntegerLiteral`.",
+      "properties": {
+        "type": { "const": "IntegerLiteral" },
+        "value": {
+          "type": "string",
+          "description": "Numeric literal text as written in the source (may include prefixes and hex digits)."
+        },
+        "suffix": {
+          "type": ["string", "null"],
+          "description": "Type suffix as written in the source: \"u\", \"l\", \"ul\", \"ll\", \"ull\". `null` and absent are both accepted: absent corresponds to Rust's `skip_serializing_if = \"Option::is_none\"`; `null` corresponds to plain `Option::None` serialization. Consumers must treat absent and `null` identically (no suffix)."
+        }
+      }
+    },
+
+    "DataFloatLiteral": {
+      "type": "object",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: FloatLiteral`.",
+      "properties": {
+        "type": { "const": "FloatLiteral" },
+        "value": { "type": "string" },
+        "suffix": {
+          "type": ["string", "null"],
+          "description": "Float suffix: \"f\", \"l\", \"F\", \"L\". `null` and absent are both accepted (see `DataIntegerLiteral.suffix`)."
+        }
+      }
+    },
+
+    "DataStringLiteral": {
+      "type": "object",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: StringLiteral`.",
+      "properties": {
+        "type": { "const": "StringLiteral" },
+        "value": {
+          "type": "string",
+          "description": "Raw literal text (with surrounding quotes) as it appears in the source, materialized by Span."
+        },
+        "encoding": {
+          "type": ["string", "null"],
+          "description": "Encoding prefix (C11): \"u8\", \"u\", \"U\", \"L\". `null` and absent are both accepted (see `DataIntegerLiteral.suffix`)."
+        }
+      }
+    },
+
+    "DataCharLiteral": {
+      "type": "object",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: CharLiteral`. Character literals in C may carry an encoding prefix: `L'a'`, `u'z'`, `U'Я'`, `u8'x'`. Whether the parser distinguishes them is a parser-side decision; the schema reserves the optional `encoding` field for that purpose and does not require it.",
+      "properties": {
+        "type": { "const": "CharLiteral" },
+        "value": {
+          "type": "string",
+          "description": "Raw character literal text (with surrounding single quotes) as it appears in the source, materialized by Span. May include the encoding prefix if the parser chooses to preserve it verbatim (e.g. `L'a'`); consumers MUST NOT rely on either behavior and should consult `encoding` when semantic distinction matters."
+        },
+        "encoding": {
+          "type": ["string", "null"],
+          "description": "Optional encoding prefix (C11): \"u8\", \"u\", \"U\", \"L\". Absent or `null` means: no prefix, OR the parser does not distinguish prefixes for char literals at the AST level. See the description of `DataCharLiteral`."
+        }
+      }
+    },
+
+    "DataBinaryExpr": {
+      "type": "object",
+      "required": ["type", "op"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: BinaryExpr`.",
+      "properties": {
+        "type": { "const": "BinaryExpr" },
+        "op": {
+          "type": "string",
+          "description": "Operator token text: \"+\", \"<<\", \"&&\", \"==\", etc."
+        }
+      }
+    },
+
+    "DataUnaryExpr": {
+      "type": "object",
+      "required": ["type", "op", "prefix"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: UnaryExpr`.",
+      "properties": {
+        "type": { "const": "UnaryExpr" },
+        "op": { "type": "string" },
+        "prefix": { "type": "boolean" }
+      }
+    },
+
+    "DataAssignmentExpr": {
+      "type": "object",
+      "required": ["type", "op"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: AssignmentExpr`.",
+      "properties": {
+        "type": { "const": "AssignmentExpr" },
+        "op": {
+          "type": "string",
+          "description": "\"=\", \"+=\", \"<<=\", etc."
+        }
+      }
+    },
+
+    "DataCallExpr": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: CallExpr`. Covers both plain function calls (`foo()`) and macro invocations (`MAX(a, b)`), which are syntactically identical. The optional `is_macro` field is reserved for the future and is NOT part of `required`: adding/removing it is a backward-compatible change. Consumers MUST treat the field as tri-state:\n  - `true`  — parser has determined this is a macro invocation (e.g. identifier is a known macro from the same TU in `single-tu` mode);\n  - `false` — parser has determined this is a plain function call (or macro-expanded to a call in `preprocessed` mode);\n  - absent  — unknown / not distinguished (the current MVP behavior); `code-bridge` MUST default to treating this identically to `false` and MUST NOT rely on macro detection being available.",
+      "properties": {
+        "type": { "const": "CallExpr" },
+        "is_macro": {
+          "type": "boolean",
+          "description": "Optional. True if the parser identified the callee as a macro invocation rather than a function call. Absent means \"unknown / not distinguished\"; consumers must default to `false`. See `DataCallExpr` description for the full contract."
+        }
+      }
+    },
+
+    "DataMemberExpr": {
+      "type": "object",
+      "required": ["type", "op"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: MemberExpr`.",
+      "properties": {
+        "type": { "const": "MemberExpr" },
+        "op": { "type": "string", "enum": [".", "->"] }
+      }
+    },
+
+    "DataIndexExpr": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: IndexExpr`.",
+      "properties": {
+        "type": { "const": "IndexExpr" }
+      }
+    },
+
+    "DataCastExpr": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: CastExpr`.",
+      "properties": {
+        "type": { "const": "CastExpr" }
+      }
+    },
+
+    "DataTernaryExpr": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: TernaryExpr`.",
+      "properties": {
+        "type": { "const": "TernaryExpr" }
+      }
+    },
+
+    "DataSizeofExpr": {
+      "type": "object",
+      "required": ["type", "is_variadic"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: SizeofExpr`.",
+      "properties": {
+        "type": { "const": "SizeofExpr" },
+        "is_variadic": {
+          "type": "boolean",
+          "description": "true for VLA (variable-length array) sizeof operands such as `sizeof(int[n])`; false for plain `sizeof` applied to a type name or an expression."
+        }
+      }
+    },
+
+    "DataFunctionDef": {
+      "type": "object",
+      "required": ["type", "name", "storage_class"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: FunctionDefinition`. Note the shortened discriminator `FunctionDef`.",
+      "properties": {
+        "type": { "const": "FunctionDef" },
+        "name": { "type": "string" },
+        "storage_class": {
+          "type": "string",
+          "description": "Storage-class specifier text: \"extern\", \"static\", \"inline\", or \"\" if absent."
+        }
+      }
+    },
+
+    "DataVariableDecl": {
+      "type": "object",
+      "required": ["type", "name", "storage_class"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: VariableDeclaration`. Note the shortened discriminator `VariableDecl`.",
+      "properties": {
+        "type": { "const": "VariableDecl" },
+        "name": { "type": "string" },
+        "storage_class": { "type": "string" }
+      }
+    },
+
+    "DataParameterDecl": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: ParameterDeclaration`. Note the shortened discriminator `ParameterDecl`.",
+      "properties": {
+        "type": { "const": "ParameterDecl" },
+        "name": { "type": "string" }
+      }
+    },
+
+    "DataTypedefDecl": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: TypedefDeclaration`. Note the shortened discriminator `TypedefDecl`.",
+      "properties": {
+        "type": { "const": "TypedefDecl" },
+        "name": { "type": "string" }
+      }
+    },
+
+    "DataStructDef": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: StructDeclaration`. Note the shortened discriminator `StructDef`.",
+      "properties": {
+        "type": { "const": "StructDef" },
+        "name": {
+          "type": ["string", "null"],
+          "description": "Struct tag name, or `null` for an anonymous struct type."
+        }
+      }
+    },
+
+    "DataUnionDef": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: UnionDeclaration`. Note the shortened discriminator `UnionDef`.",
+      "properties": {
+        "type": { "const": "UnionDef" },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+
+    "DataEnumDef": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: EnumDeclaration`. Note the shortened discriminator `EnumDef`.",
+      "properties": {
+        "type": { "const": "EnumDef" },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+
+    "DataEnumerator": {
+      "type": "object",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: Enumerator`.",
+      "properties": {
+        "type": { "const": "Enumerator" },
+        "name": { "type": "string" },
+        "value": {
+          "type": ["string", "null"],
+          "description": "Explicit enumerator value as written in the source (materialized string), or `null`/absent if implicit."
+        }
+      }
+    },
+
+    "DataPreprocessorDirective": {
+      "type": "object",
+      "required": ["type", "directive", "argument"],
+      "additionalProperties": false,
+      "description": "Payload for all `NodeKind: Preprocessor*` kinds. `directive` is expected to match the kind suffix (e.g. `PreprocessorInclude` → \"include\"); this cross-check is enforced by the custom validator, not by JSON Schema.\n\nContract for `argument`: the field is unconditionally present and is always a JSON string. Directives without arguments (e.g. `#else`, `#endif`) serialize as `\"argument\": \"\"` — never as `null` and never omitted. On the Rust side this corresponds to a plain `String` (not `Option<String>`), which is the natural representation for raw, unexpanded directive text.",
+      "properties": {
+        "type": { "const": "PreprocessorDirective" },
+        "directive": {
+          "type": "string",
+          "description": "Directive name without the leading '#': \"include\", \"define\", \"undef\", \"if\", \"ifdef\", \"ifndef\", \"else\", \"elif\", \"endif\", \"pragma\", \"line\", \"error\", \"warning\"."
+        },
+        "argument": {
+          "type": "string",
+          "description": "Raw argument text up to end of line (unexpanded). Empty string (`\"\"`) for directives without arguments. MUST NOT be `null` and MUST NOT be omitted; on the Rust side this is `String`, not `Option<String>`."
+        }
+      }
+    },
+
+    "DataErrorNode": {
+      "type": "object",
+      "required": ["type", "error_index"],
+      "additionalProperties": false,
+      "description": "Payload for `NodeKind: ErrorNode`. Ensures the AST remains a connected graph and errors can be located via the top-level `errors` array (see ТЗ §5.6).",
+      "properties": {
+        "type": { "const": "ErrorNode" },
+        "error_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index into the top-level `errors` array. Must reference an existing entry (checked by the custom validator)."
+        }
+      }
+    },
+
+    "Error": {
+      "type": "object",
+      "required": ["code", "message", "span", "severity"],
+      "additionalProperties": false,
+      "description": "A single lexical, syntactic, or semantic diagnostic.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable machine-readable error code, e.g. \"E_SYNTAX_EXPECTED_SEMICOLON\"."
+        },
+        "message": { "type": "string" },
+        "span": { "$ref": "#/$defs/Span" },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "note", "info"]
+        }
+      }
+    }
+  }
+}

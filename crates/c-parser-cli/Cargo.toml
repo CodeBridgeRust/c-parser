@@ -1,0 +1,17 @@
+[package]
+name = "c-parser-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI wrapper for the c-parser library"
+
+[[bin]]
+name = "c-parser-cli"
+path = "src/main.rs"
+
+[dependencies]
+c-parser = { path = "../c-parser" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"

@@ -1,0 +1,11 @@
+[package]
+name = "c-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Zero-copy, arena-based C parser with lazy JSON serialization"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
