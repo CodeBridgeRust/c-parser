@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
     ///
     /// These include: function definitions, variable/function declarations,
     /// struct/union/enum/typedef declarations.
-    fn parse_external_declaration(&mut self) -> Result<NodeId, ParseError> {
+    pub fn parse_external_declaration(&mut self) -> Result<NodeId, ParseError> {
         // Skip stray semicolons (empty declarations)
         if self.eat(TokenKind::Semi) {
             let start = self.current().span.start;

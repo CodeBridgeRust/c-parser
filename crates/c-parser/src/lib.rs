@@ -31,6 +31,7 @@ pub mod serialize;
 pub use arena::Arena;
 pub use ast::{Ast, Node, NodeData, NodeId, NodeKind, Span};
 pub use error::{ParseError, Severity};
+pub use incremental::IncrementalSession;
 pub use lexer::token::{CDialect, PreprocessingMode};
 pub use serialize::{ast_from_json, ast_to_json, ast_to_pretty_json};
 

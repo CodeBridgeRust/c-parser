@@ -316,6 +316,37 @@ impl<'a> Parser<'a> {
     pub fn errors(&self) -> &[ParseError] {
         &self.errors
     }
+
+    /// Parse a region of source text and return the top-level node ids.
+    ///
+    /// This is used by [`crate::incremental::IncrementalSession`] for local
+    /// re-parsing.  If the region starts with `{`, it is parsed as a compound
+    /// statement and the returned ids are the statement nodes inside it.
+    /// Otherwise it is parsed as a sequence of external declarations.
+    ///
+    /// The returned `NodeId`s are relative to this parser's arena.
+    pub fn parse_region(&mut self) -> Result<Vec<NodeId>, ParseError> {
+        if self.current_kind() == TokenKind::LBrace {
+            let compound_id = self.parse_compound_statement()?;
+            let children = self.arena.get(compound_id).children.clone();
+            Ok(children)
+        } else {
+            let mut children = Vec::new();
+            while self.current_kind() != TokenKind::Eof {
+                match self.parse_external_declaration() {
+                    Ok(id) => children.push(id),
+                    Err(_e) => {
+                        // Error recovery: synchronize and continue.
+                        self.synchronize();
+                        if self.current_kind() != TokenKind::Eof {
+                            self.advance();
+                        }
+                    }
+                }
+            }
+            Ok(children)
+        }
+    }
 }
 
 #[cfg(test)]
