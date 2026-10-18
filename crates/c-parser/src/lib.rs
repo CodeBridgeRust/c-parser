@@ -121,34 +121,45 @@ pub trait ParserPlugin: Send + Sync {
 /// use c_parser::{create_parser, ParserConfig};
 /// let parser = create_parser(ParserConfig::default());
 /// ```
-pub fn create_parser(_config: ParserConfig) -> Box<dyn ParserPlugin> {
-    // Stub — full implementation in Stage 4 (parser).
-    struct StubParser;
-    impl ParserPlugin for StubParser {
-        fn language(&self) -> &'static str {
-            "c"
-        }
-        fn parse(&self, _input: ParseInput<'_>) -> Result<ParseResult, ParseError> {
-            Err(ParseError {
-                code: "E_STUB".to_string(),
-                message: "parser not yet implemented".to_string(),
-                span: Span { start: 0, end: 0 },
-                severity: Severity::Error,
-            })
-        }
-        fn parse_incremental(
-            &self,
-            _input: ParseInput<'_>,
-            _change: Span,
-        ) -> Result<ParseResult, ParseError> {
-            Err(ParseError {
-                code: "E_STUB".to_string(),
-                message: "parser not yet implemented".to_string(),
-                span: Span { start: 0, end: 0 },
-                severity: Severity::Error,
-            })
-        }
+pub fn create_parser(config: ParserConfig) -> Box<dyn ParserPlugin> {
+    Box::new(CParserPlugin {
+        config: config.clone(),
+    })
+}
+
+/// The concrete [`ParserPlugin`] implementation for the C language.
+///
+/// Backed by the two-phase parser ([`crate::parser`]).
+struct CParserPlugin {
+    config: ParserConfig,
+}
+
+impl ParserPlugin for CParserPlugin {
+    fn language(&self) -> &'static str {
+        "c"
     }
 
-    Box::new(StubParser)
+    fn parse(&self, input: ParseInput<'_>) -> Result<ParseResult, ParseError> {
+        let mut parser = crate::parser::Parser::new(
+            input.source,
+            self.config.dialect,
+            self.config.preprocessing,
+            self.config.include_comments,
+        );
+
+        let root = parser.parse_translation_unit()?;
+        let ast = parser.finish(root);
+
+        Ok(ParseResult { ast })
+    }
+
+    fn parse_incremental(
+        &self,
+        input: ParseInput<'_>,
+        _change: Span,
+    ) -> Result<ParseResult, ParseError> {
+        // MVP: incremental updates are implemented in Stage 5.  For now we
+        // fall back to a full re-parse, which is correct but not incremental.
+        self.parse(input)
+    }
 }

@@ -46,3 +46,18 @@ impl std::fmt::Display for ParseError {
 }
 
 impl std::error::Error for ParseError {}
+
+// ---------------------------------------------------------------------------
+// Conversion from ArenaError
+// ---------------------------------------------------------------------------
+
+impl From<crate::arena::ArenaError> for ParseError {
+    fn from(_err: crate::arena::ArenaError) -> Self {
+        ParseError {
+            code: "E_FATAL".to_string(),
+            message: "arena overflow: exceeded maximum node capacity".to_string(),
+            span: crate::ast::Span { start: 0, end: 0 },
+            severity: Severity::Error,
+        }
+    }
+}
