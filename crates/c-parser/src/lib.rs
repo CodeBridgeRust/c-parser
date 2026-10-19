@@ -116,6 +116,33 @@ pub trait ParserPlugin: Send + Sync {
 // Factory
 // ---------------------------------------------------------------------------
 
+/// Parse source code with the given input, returning the [`ParseResult`].
+///
+/// This is the ergonomic entry point matching ТЗ §7.1: it constructs a parser
+/// with the provided configuration and performs a full parse.  Non-fatal
+/// diagnostics are available via [`ParseResult::errors`] and [`Ast::errors`].
+///
+/// ```rust
+/// use c_parser::{parse, ParseInput, ParserConfig};
+/// let input = ParseInput {
+///     source: b"int main(void) { return 0; }",
+///     filename: Some("main.c"),
+///     config: ParserConfig::default(),
+/// };
+/// let result = parse(input).expect("fatal error only on resource exhaustion");
+/// ```
+pub fn parse(input: ParseInput<'_>) -> Result<ParseResult, ParseError> {
+    let mut parser = crate::parser::Parser::new(
+        input.source,
+        input.config.dialect,
+        input.config.preprocessing,
+        input.config.include_comments,
+    );
+    let root = parser.parse_translation_unit()?;
+    let ast = parser.finish(root);
+    Ok(ParseResult { ast })
+}
+
 /// Create a parser plugin with the given configuration.
 ///
 /// ```rust

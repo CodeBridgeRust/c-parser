@@ -279,7 +279,7 @@ pub struct Token {
 
 impl Token {
     /// Construct a new token.
-    pub fn new(kind: TokenKind, start: usize, end: usize) -> Self {
+    pub fn new(kind: TokenKind, start: u32, end: u32) -> Self {
         Self {
             kind,
             span: Span { start, end },

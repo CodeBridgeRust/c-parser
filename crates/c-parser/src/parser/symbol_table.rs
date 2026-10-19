@@ -83,10 +83,10 @@ impl SymbolTable {
     pub fn is_typedef(&self, span: Span, source: &[u8]) -> bool {
         // We compare by byte-content, not by Span identity, because the same
         // name may have a different Span when it appears later.
-        let needle = &source[span.start..span.end];
+        let needle = &source[span.start as usize..span.end as usize];
         for scope in self.scopes.iter().rev() {
             for entry in &scope.entries {
-                let existing = &source[entry.start..entry.end];
+                let existing = &source[entry.start as usize..entry.end as usize];
                 if needle == existing {
                     return true;
                 }

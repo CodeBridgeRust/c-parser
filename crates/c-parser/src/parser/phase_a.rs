@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
             NodeKind::TranslationUnit,
             Span {
                 start: 0,
-                end: self.source_len(),
+                end: self.source_len() as u32,
             },
             vec![],
         )?;
@@ -1113,7 +1113,7 @@ impl<'a> Parser<'a> {
             message: format!("arena overflow during: {}", _context),
             span: Span {
                 start: 0,
-                end: self.source_len(),
+                end: self.source_len() as u32,
             },
             severity: crate::error::Severity::Error,
         }

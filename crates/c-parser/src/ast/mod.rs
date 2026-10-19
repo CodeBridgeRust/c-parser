@@ -32,10 +32,17 @@ pub type NodeId = u32;
 ///
 /// Invariants (enforced by the parser and the custom validator):
 /// `start <= end` and `end <= source_length`.
+///
+/// Both fields are `u32` (32-bit byte offsets) rather than `usize`.  This
+/// mirrors the `NodeId = u32` decision (see `docs/architecture.md` §7.2):
+/// 32-bit offsets cover source files up to ~4 GB — far beyond any realistic C
+/// translation unit — while halving the size of [`Span`], [`TextSlice`],
+/// [`NodeData`] and ultimately [`Node`], which directly improves spatial
+/// locality and reduces the analysis-phase memory footprint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Span {
-    pub start: usize,
-    pub end: usize,
+    pub start: u32,
+    pub end: u32,
 }
 
 // ---------------------------------------------------------------------------

@@ -514,7 +514,7 @@ fn run_parse_incremental(
     );
 
     session
-        .apply_edit(Span { start, end }, new_text)
+        .apply_edit(Span { start: start as u32, end: end as u32 }, new_text)
         .map_err(|e| anyhow::anyhow!("{}: {}", e.code, e.message))?;
 
     // Serialize to JSON using the session's source (which may now be owned).

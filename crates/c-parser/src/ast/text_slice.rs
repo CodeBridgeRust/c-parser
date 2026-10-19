@@ -48,7 +48,7 @@ pub enum TextSlice {
 
 impl TextSlice {
     /// Build a zero-copy slice from a byte range.
-    pub fn from_span(start: usize, end: usize) -> Self {
+    pub fn from_span(start: u32, end: u32) -> Self {
         Self::Span(Span { start, end })
     }
 
@@ -68,7 +68,9 @@ impl TextSlice {
     /// - `Detached` → borrowed `&str`.
     pub fn materialize<'a>(&'a self, source: &'a [u8]) -> Cow<'a, str> {
         match self {
-            TextSlice::Span(s) => String::from_utf8_lossy(&source[s.start..s.end]),
+            TextSlice::Span(s) => {
+                String::from_utf8_lossy(&source[s.start as usize..s.end as usize])
+            }
             TextSlice::Detached(s) => Cow::Borrowed(s),
         }
     }

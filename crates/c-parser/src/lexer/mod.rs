@@ -161,7 +161,7 @@ impl<'a> Lexer<'a> {
     /// Return a token spanning `[start, end)`.
     #[inline]
     fn tok(&self, kind: TokenKind, start: usize, end: usize) -> Token {
-        Token::new(kind, start, end)
+        Token::new(kind, start as u32, end as u32)
     }
 
     // -- Core dispatch ------------------------------------------------------
@@ -1015,9 +1015,9 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 3]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"0");
-        assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], b"42");
-        assert_eq!(&source[tokens[2].span.start..tokens[2].span.end], b"999");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"0");
+        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"42");
+        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"999");
     }
 
     #[test]
@@ -1026,8 +1026,8 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 4]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"0x0");
-        assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], b"0xDEAD");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"0x0");
+        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"0xDEAD");
     }
 
     #[test]
@@ -1044,9 +1044,9 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 9]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"42u");
-        assert_eq!(&source[tokens[4].span.start..tokens[4].span.end], b"42ul");
-        assert_eq!(&source[tokens[6].span.start..tokens[6].span.end], b"42ll");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"42u");
+        assert_eq!(&source[tokens[4].span.start as usize..tokens[4].span.end as usize], b"42ul");
+        assert_eq!(&source[tokens[6].span.start as usize..tokens[6].span.end as usize], b"42ll");
     }
 
     // -- Float literals -----------------------------------------------------
@@ -1057,12 +1057,12 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::FloatLiteral; 7]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"3.14");
-        assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], b".5");
-        assert_eq!(&source[tokens[2].span.start..tokens[2].span.end], b"1e10");
-        assert_eq!(&source[tokens[3].span.start..tokens[3].span.end], b"2.0f");
-        assert_eq!(&source[tokens[4].span.start..tokens[4].span.end], b"3.14L");
-        assert_eq!(&source[tokens[5].span.start..tokens[5].span.end], b"1e-5");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"3.14");
+        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b".5");
+        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"1e10");
+        assert_eq!(&source[tokens[3].span.start as usize..tokens[3].span.end as usize], b"2.0f");
+        assert_eq!(&source[tokens[4].span.start as usize..tokens[4].span.end as usize], b"3.14L");
+        assert_eq!(&source[tokens[5].span.start as usize..tokens[5].span.end as usize], b"1e-5");
     }
 
     // -- Character literals -------------------------------------------------
@@ -1081,9 +1081,9 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::CharLiteral; 3]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"L'a'");
-        assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], b"u'a'");
-        assert_eq!(&source[tokens[2].span.start..tokens[2].span.end], b"U'a'");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"L'a'");
+        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"u'a'");
+        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"U'a'");
     }
 
     // -- String literals ----------------------------------------------------
@@ -1102,10 +1102,10 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::StringLiteral; 4]);
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"L\"wide\"");
-        assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], b"u\"utf16\"");
-        assert_eq!(&source[tokens[2].span.start..tokens[2].span.end], b"U\"utf32\"");
-        assert_eq!(&source[tokens[3].span.start..tokens[3].span.end], b"u8\"utf8\"");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"L\"wide\"");
+        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"u\"utf16\"");
+        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"U\"utf32\"");
+        assert_eq!(&source[tokens[3].span.start as usize..tokens[3].span.end as usize], b"u8\"utf8\"");
     }
 
     // -- Operators ----------------------------------------------------------
@@ -1196,7 +1196,7 @@ mod tests {
         assert_eq!(tokens[0].kind, TokenKind::LineComment);
         assert_eq!(tokens[0].span.start, 0);
         assert_eq!(tokens[0].span.end, 14); // "// hello world"
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"// hello world");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"// hello world");
     }
 
     #[test]
@@ -1206,7 +1206,7 @@ mod tests {
         assert_eq!(tokens[0].kind, TokenKind::BlockComment);
         assert_eq!(tokens[0].span.start, 0);
         assert_eq!(tokens[0].span.end, 11); // "/* block */"
-        assert_eq!(&source[tokens[0].span.start..tokens[0].span.end], b"/* block */");
+        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"/* block */");
     }
 
     // -- Hash / preprocessor ------------------------------------------------

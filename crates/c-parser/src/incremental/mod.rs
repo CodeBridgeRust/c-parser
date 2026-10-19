@@ -124,7 +124,7 @@ impl<'a> IncrementalSession<'a> {
     pub fn apply_edit(&mut self, change: Span, new_text: &[u8]) -> Result<(), ParseError> {
         // Validate change range.
         let old_source = self.source_slice();
-        if change.start > old_source.len() || change.end > old_source.len() {
+        if change.start as usize > old_source.len() || change.end as usize > old_source.len() {
             return Err(ParseError {
                 code: "E_FATAL".to_string(),
                 message: format!(
@@ -138,14 +138,15 @@ impl<'a> IncrementalSession<'a> {
         }
 
         // 1. Build new source buffer.
-        let delta: isize = new_text.len() as isize - (change.end - change.start) as isize;
+        let delta: isize =
+            new_text.len() as isize - (change.end as usize - change.start as usize) as isize;
 
         let mut new_source = Vec::with_capacity(
-            old_source.len() - (change.end - change.start) + new_text.len(),
+            old_source.len() - (change.end as usize - change.start as usize) + new_text.len(),
         );
-        new_source.extend_from_slice(&old_source[..change.start]);
+        new_source.extend_from_slice(&old_source[..change.start as usize]);
         new_source.extend_from_slice(new_text);
-        new_source.extend_from_slice(&old_source[change.end..]);
+        new_source.extend_from_slice(&old_source[change.end as usize..]);
 
         // 2. Find covering node.
         let covering_id: NodeId = self.index.find_covering(change).unwrap_or(self.ast.root);
@@ -158,7 +159,8 @@ impl<'a> IncrementalSession<'a> {
         let descendants = self.collect_descendants(covering_id);
 
         // 5. Re-parse the covering node's region.
-        let region_src = &new_source[new_covering_span.start..new_covering_span.end];
+        let region_src =
+            &new_source[new_covering_span.start as usize..new_covering_span.end as usize];
         let mut region_parser = Parser::new(
             region_src,
             self.dialect,
@@ -307,13 +309,13 @@ impl<'a> IncrementalSession<'a> {
     ///   node).
     fn adjust_span(&self, span: Span, change: Span, delta: isize) -> Span {
         let start = if span.start >= change.end {
-            (span.start as isize + delta) as usize
+            (span.start as isize + delta) as u32
         } else {
             span.start
         };
 
         let end = if span.end > change.start {
-            (span.end as isize + delta) as usize
+            (span.end as isize + delta) as u32
         } else {
             span.end
         };

@@ -208,7 +208,7 @@ fn incremental_session_fallback_full_reparse() {
     })
     .unwrap();
     // Delete everything after first char — should trigger full reparse fallback.
-    assert!(session.apply_edit(Span { start: 0, end: src.len() }, b"i").is_ok());
+    assert!(session.apply_edit(Span { start: 0, end: src.len() as u32 }, b"i").is_ok());
 }
 
 #[test]
@@ -234,7 +234,7 @@ fn error_node_has_valid_span() {
     for node in &result.ast.nodes {
         if node.kind == NodeKind::ErrorNode {
             assert!(node.span.start <= node.span.end);
-            assert!(node.span.end <= source.len());
+            assert!(node.span.end <= source.len() as u32);
         }
     }
 }
@@ -326,7 +326,7 @@ fn all_spans_in_ast_are_valid() {
     for node in &result.ast.nodes {
         assert!(node.span.start <= node.span.end,
             "span.start ({}) > span.end ({}) for {:?}", node.span.start, node.span.end, node.kind);
-        assert!(node.span.end <= source.len(),
+        assert!(node.span.end <= source.len() as u32,
             "span.end ({}) > source.len() ({}) for {:?}", node.span.end, source.len(), node.kind);
     }
 }
@@ -378,7 +378,7 @@ fn bom_is_stripped_and_source_length_is_correct() {
         assert!(node.span.start <= node.span.end,
             "span.start ({}) > span.end ({}) for {:?}",
             node.span.start, node.span.end, node.kind);
-        assert!(node.span.end <= sl,
+        assert!(node.span.end <= sl as u32,
             "span.end ({}) > source_length ({}) for {:?}",
             node.span.end, sl, node.kind);
     }

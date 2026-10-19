@@ -185,7 +185,7 @@ mod tests {
     use crate::ast::{Node, NodeKind};
 
     /// Helper: build a minimal arena with nodes that have specific spans.
-    fn make_nodes(spans: &[(usize, usize)]) -> Vec<Node> {
+    fn make_nodes(spans: &[(u32, u32)]) -> Vec<Node> {
         spans
             .iter()
             .map(|&(s, e)| {
@@ -198,7 +198,7 @@ mod tests {
     fn build_is_sorted_by_start() {
         let nodes = make_nodes(&[(30, 40), (0, 100), (50, 60)]);
         let idx = SpanIndex::build(&nodes);
-        let starts: Vec<usize> = idx.entries().iter().map(|e| e.span.start).collect();
+        let starts: Vec<u32> = idx.entries().iter().map(|e| e.span.start).collect();
         assert_eq!(starts, vec![0, 30, 50]);
     }
 

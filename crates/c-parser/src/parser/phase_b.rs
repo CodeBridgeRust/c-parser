@@ -733,7 +733,7 @@ impl<'a> Parser<'a> {
     /// and return the TypeSpecifier node id.
     pub fn parse_struct_union_enum_type(
         &mut self,
-        start: usize,
+        start: u32,
     ) -> Result<NodeId, ParseError> {
         // Optional tag name
         let tag_span = if self.current_kind() == TokenKind::Identifier {
