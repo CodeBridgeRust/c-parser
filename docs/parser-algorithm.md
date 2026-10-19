@@ -193,7 +193,7 @@ pub struct Node {
     pub kind: NodeKind,
     pub span: Span,
     pub children: Vec<NodeId>,
-    pub data: NodeData,  // или null для структурных узлов
+    pub data: Option<NodeData>,  // None ⇔ "data": null для структурных узлов
 }
 ```
 

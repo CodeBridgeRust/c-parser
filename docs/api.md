@@ -270,7 +270,7 @@ pub enum NodeKind {
 Rust-объявление:
 
 ```rust
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(tag = "type")]
 pub enum NodeData {
     Identifier { name: TextSlice },
@@ -309,6 +309,7 @@ pub enum NodeData {
 ```
 
 **Замечания.**
+- `NodeData` **не** реализует `Serialize` через derive — сериализация выполняется вручную обёрткой `SerializableData` (см. §5), поскольку строковые поля `TextSlice` материализуются из исходного буфера. `Deserialize` derive присутствует и читает строки напрямую из JSON (в `TextSlice::Detached`).
 - `#[serde(tag = "type")]` даёт `{"type": "Identifier", "name": "x"}`. `#[serde(rename = "FunctionDef")]` на варианте даёт `{"type": "FunctionDef", …}` для `kind: FunctionDefinition`. Это ровно то, что требует схема.
 - Для `PreprocessorDirective.directive` используется `String` (не `TextSlice`), потому что это **не** исходный текст: имя директивы нормализуется парсером (`include`, `define`, …), и на него опирается cross-check `kind ↔ directive` в `tests/schema_validation.rs`.
 
@@ -799,36 +800,60 @@ let json = ast_to_json(&result.ast, new_input.source)?;
 ```rust
 // examples/embed_into_rust.rs
 //
-// Демонстрация статической интеграции: парсинг файла + сериализация в JSON.
+// Демонстрация статической интеграции: создание парсера, вызов parse,
+// обработка errors() и сериализация в JSON.
 // Запуск: cargo run --example embed_into_rust -- path/to/file.c
+
+use std::process::ExitCode;
 
 use c_parser::{ast_to_json, create_parser, ParseInput, ParserConfig};
 
-fn main() -> anyhow::Result<()> {
-    let path = std::env::args()
-        .nth(1)
-        .ok_or_else(|| anyhow::anyhow!("usage: embed_into_rust <file.c>"))?;
+fn main() -> ExitCode {
+    let path = match std::env::args().nth(1) {
+        Some(path) => path,
+        None => {
+            eprintln!("usage: cargo run --example embed_into_rust -- <file.c>");
+            return ExitCode::from(2);
+        }
+    };
 
-    let source = std::fs::read(&path)?;
+    // Источник читается как байты — не обязан быть валидным UTF-8.
+    let source = std::fs::read(&path).unwrap_or_else(|err| {
+        eprintln!("error: cannot read `{path}`: {err}");
+        std::process::exit(1);
+    });
+
+    // 1. Создание парсера (конфигурация по умолчанию).
     let config = ParserConfig::default();
-
     let parser = create_parser(config.clone());
+
+    // 2. Парсинг. `Err` — только фатальная ошибка; нефатальные синтаксические
+    //    ошибки попадают в `result.errors()` (см. шаг 3).
     let result = parser.parse(ParseInput {
         source: &source,
         filename: Some(&path),
         config,
-    })?;
+    }).unwrap_or_else(|err| {
+        eprintln!("error: fatal parse error: {err}");
+        std::process::exit(1);
+    });
 
-    // Диагностика — отдельно от AST.
+    // 3. Диагностика — отдельно от AST.
     for err in result.errors() {
         eprintln!("{}:{}: {} ({}..{})",
             path, err.code, err.message, err.span.start, err.span.end);
     }
 
-    // JSON самодостаточен; исходный буфер нужен только на этапе материализации.
-    let json = ast_to_json(&result.ast, &source)?;
-    println!("{json}");
-    Ok(())
+    // 4. JSON самодостаточен; `source` нужен для ленивой материализации.
+    match ast_to_json(&result.ast, &source) {
+        Ok(json) => println!("{json}"),
+        Err(err) => {
+            eprintln!("error: JSON serialization failed: {err}");
+            return ExitCode::from(1);
+        }
+    }
+
+    ExitCode::SUCCESS
 }
 ```
 

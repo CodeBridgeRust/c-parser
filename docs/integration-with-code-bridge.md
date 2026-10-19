@@ -228,11 +228,11 @@ fn parse_via_ffi(source: &[u8], config_json: &str) -> Result<String> {
 
 ```rust
 #[no_mangle]
-pub extern "C" fn c_parser_free_string(ptr: *mut c_char) {
+pub unsafe extern "C" fn c_parser_free_string(ptr: *mut c_char) {
     if ptr.is_null() { return; }
     unsafe {
         // Восстанавливаем CString и позволяем ему освободиться (drop).
-        let _ = CString::from_raw(ptr);
+        drop(CString::from_raw(ptr));
     }
 }
 ```

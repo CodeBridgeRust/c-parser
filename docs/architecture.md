@@ -141,13 +141,16 @@ pub struct Ast {
     pub root: NodeId,
     pub nodes: Vec<Node>,
     pub source_length: usize,
+    /// Нефатальные диагностики. Сериализуются в верхнеуровневый массив `errors`.
+    pub errors: Vec<ParseError>,
 }
 
 pub struct Node {
     pub kind: NodeKind,
     pub span: Span,
     pub children: Vec<NodeId>,
-    pub data: NodeData,
+    /// `None` ⇔ `"data": null` в JSON (структурные узлы).
+    pub data: Option<NodeData>,
 }
 ```
 
