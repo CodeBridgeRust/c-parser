@@ -10,4 +10,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 c-parser = { path = "../c-parser" }
-libc = "0.2"
+serde_json = "1"
+
+[dev-dependencies]
+serde_json = "1"
+libloading = "0.8"
