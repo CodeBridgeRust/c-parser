@@ -6,7 +6,7 @@
 //! dialects, etc.
 
 use c_parser::{
-    ast_from_json, ast_to_json, create_parser, ParseInput, ParserConfig, CDialect,
+    ast_from_json, ast_to_json, create_parser, CDialect, ParseInput, ParserConfig,
     PreprocessingMode,
 };
 use serde_json::Value;
@@ -73,10 +73,10 @@ fn parser_never_panics_on_random_bytes() {
     let test_vectors: &[&[u8]] = &[
         &[0xFF, 0xFF, 0xFF, 0xFF],
         &[0x00, 0x00, 0x00, 0x00],
-        &[b'{', b'}', b'(', b')', b'[', b']'],
-        &[b'"', b'"', b'\'', b'\''],
-        &[b'#', b'#'],
-        &[b'\\', b'\\'],
+        b"{}()[]",
+        b"\"\"''",
+        b"##",
+        b"\\\\",
         b"@@@@@@@@@@",
         b"(((((((((((",
         b")))))))))))",
@@ -160,8 +160,7 @@ fn deep_nesting_does_not_overflow_stack() {
             config,
         })
         .expect("deep nesting should not overflow");
-    let json =
-        ast_to_json(&result.ast, source.as_bytes()).expect("serialization failed");
+    let json = ast_to_json(&result.ast, source.as_bytes()).expect("serialization failed");
     let v: Value = serde_json::from_str(&json).unwrap();
     let bin_count = v["nodes"]
         .as_array()
@@ -197,8 +196,7 @@ fn deep_nesting_of_parens() {
             config,
         })
         .expect("deep paren nesting should not overflow");
-    let json =
-        ast_to_json(&result.ast, source.as_bytes()).expect("serialization failed");
+    let json = ast_to_json(&result.ast, source.as_bytes()).expect("serialization failed");
     let v: Value = serde_json::from_str(&json).unwrap();
     let parens = v["nodes"]
         .as_array()
@@ -206,7 +204,10 @@ fn deep_nesting_of_parens() {
         .iter()
         .filter(|n| n["kind"] == "ParenExpr")
         .count();
-    assert!(parens >= 250, "expected >=250 ParenExpr nodes, got {parens}");
+    assert!(
+        parens >= 250,
+        "expected >=250 ParenExpr nodes, got {parens}"
+    );
 }
 
 // =========================================================================
@@ -340,7 +341,7 @@ fn single_tu_mode_parses_multiple_directives() {
         .filter(|n| n["kind"].as_str().unwrap().starts_with("Preprocessor"))
         .collect();
     assert!(
-        pp_nodes.len() >= 1,
+        !pp_nodes.is_empty(),
         "expected at least 1 preprocessor node, got {}",
         pp_nodes.len()
     );

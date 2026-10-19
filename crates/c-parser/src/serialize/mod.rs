@@ -312,7 +312,11 @@ mod tests {
 
     /// Build a minimal `Ast` for testing.
     fn make_ast() -> Ast {
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 28 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 28 },
+            vec![1],
+        );
         let ident = Node::with_data(
             NodeKind::Identifier,
             Span { start: 0, end: 3 },
@@ -349,7 +353,11 @@ mod tests {
     #[test]
     fn round_trip_preserves_structural_null_data() {
         let source = b"x;";
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 2 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 2 },
+            vec![1],
+        );
         let es = Node::structural(
             NodeKind::ExpressionStatement,
             Span { start: 0, end: 2 },
@@ -369,7 +377,11 @@ mod tests {
     #[test]
     fn non_utf8_source_does_not_panic() {
         let source: &[u8] = &[0xFF, 0xFE, 0xFD, b'x'];
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 4 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 4 },
+            vec![1],
+        );
         let ident = Node::with_data(
             NodeKind::Identifier,
             Span { start: 0, end: 4 },
@@ -466,7 +478,11 @@ mod tests {
     #[test]
     fn call_expr_without_is_macro_omits_key() {
         let source = b"foo()";
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 5 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 5 },
+            vec![1],
+        );
         let call = Node::with_data(
             NodeKind::CallExpr,
             Span { start: 0, end: 5 },
@@ -483,7 +499,11 @@ mod tests {
     #[test]
     fn preprocessor_directive_empty_argument() {
         let source = b"#endif\n";
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 7 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 7 },
+            vec![1],
+        );
         let pp = Node::with_data(
             NodeKind::PreprocessorEndif,
             Span { start: 0, end: 6 },
@@ -503,7 +523,11 @@ mod tests {
     #[test]
     fn error_node_serializes_correctly() {
         let source = b"error!";
-        let tu = Node::structural(NodeKind::TranslationUnit, Span { start: 0, end: 6 }, vec![1]);
+        let tu = Node::structural(
+            NodeKind::TranslationUnit,
+            Span { start: 0, end: 6 },
+            vec![1],
+        );
         let err_node = Node::with_data(
             NodeKind::ErrorNode,
             Span { start: 0, end: 6 },

@@ -126,7 +126,7 @@ mod tests {
         // inner T: {31,32}
         // inner use: {34,35}
         // outer use T after `}`: {41,42}
-        
+
         let outer = Span { start: 12, end: 13 };
         let inner = Span { start: 31, end: 32 };
         let inner_use = Span { start: 34, end: 35 };

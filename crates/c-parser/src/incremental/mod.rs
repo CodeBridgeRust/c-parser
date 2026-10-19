@@ -23,7 +23,7 @@ use crate::index::SpanIndex;
 use crate::lexer::token::{CDialect, PreprocessingMode};
 use crate::parser::Parser;
 use crate::serialize::ast_to_json;
-use crate::{ParseInput};
+use crate::ParseInput;
 
 use std::collections::HashSet;
 
@@ -81,12 +81,7 @@ impl<'a> IncrementalSession<'a> {
         let dialect = input.config.dialect;
         let preprocessing = input.config.preprocessing;
 
-        let mut parser = Parser::new(
-            input.source,
-            dialect,
-            preprocessing,
-            include_comments,
-        );
+        let mut parser = Parser::new(input.source, dialect, preprocessing, include_comments);
 
         let root = parser.parse_translation_unit()?;
         let ast = parser.finish(root);
@@ -382,9 +377,7 @@ mod tests {
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
         // Replace "x" with "y"
-        session
-            .apply_edit(Span { start: 4, end: 5 }, b"y")
-            .unwrap();
+        session.apply_edit(Span { start: 4, end: 5 }, b"y").unwrap();
 
         let source = session.source();
         assert_eq!(source, b"int y;");
@@ -395,9 +388,7 @@ mod tests {
         let src = b"int x;";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 4, end: 5 }, b"y")
-            .unwrap();
+        session.apply_edit(Span { start: 4, end: 5 }, b"y").unwrap();
 
         let ast = session.ast();
         let tu = &ast.nodes[ast.root as usize];
@@ -424,16 +415,12 @@ mod tests {
         let src = b"int x;";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 4, end: 5 }, b"y")
-            .unwrap();
+        session.apply_edit(Span { start: 4, end: 5 }, b"y").unwrap();
 
         let id = session.index.find_covering(Span { start: 4, end: 5 });
         assert!(id.is_some());
 
-        let tu_id = session
-            .index
-            .find_covering(Span { start: 0, end: 6 });
+        let tu_id = session.index.find_covering(Span { start: 0, end: 6 });
         assert!(tu_id.is_some());
     }
 
@@ -455,9 +442,7 @@ mod tests {
         let src = b"int x; /* comment */";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 7, end: 20 }, b"")
-            .unwrap();
+        session.apply_edit(Span { start: 7, end: 20 }, b"").unwrap();
 
         assert_eq!(session.source(), b"int x; ");
         assert_eq!(session.ast().source_length, 7);
@@ -468,9 +453,7 @@ mod tests {
         let src = b"int x;";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 4, end: 5 }, b"y")
-            .unwrap();
+        session.apply_edit(Span { start: 4, end: 5 }, b"y").unwrap();
 
         let json = session.to_json().unwrap();
         assert!(json.contains("\"y\""));
@@ -482,7 +465,13 @@ mod tests {
         let src = b"int x;";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        let result = session.apply_edit(Span { start: 100, end: 200 }, b"");
+        let result = session.apply_edit(
+            Span {
+                start: 100,
+                end: 200,
+            },
+            b"",
+        );
         assert!(result.is_err());
     }
 
@@ -491,9 +480,7 @@ mod tests {
         let src = b"int a; int b;";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 4, end: 5 }, b"x")
-            .unwrap();
+        session.apply_edit(Span { start: 4, end: 5 }, b"x").unwrap();
         assert_eq!(session.source(), b"int x; int b;");
 
         session
@@ -532,12 +519,10 @@ mod tests {
         let src = b"int a;\nint b;\nint c;\n";
         let mut session = IncrementalSession::new(make_input(src)).unwrap();
 
-        session
-            .apply_edit(Span { start: 5, end: 6 }, b"x")
-            .unwrap();
+        session.apply_edit(Span { start: 5, end: 6 }, b"x").unwrap();
 
         // Check that the index has the right number of entries.
-        assert!(session.index.len() > 0);
+        assert!(!session.index.is_empty());
 
         // Every node in the AST should have an index entry.
         // Build a fresh index and compare sizes.
@@ -560,9 +545,7 @@ mod tests {
             .unwrap();
 
             // After first edit, session owns its buffer.
-            session
-                .apply_edit(Span { start: 4, end: 5 }, b"y")
-                .unwrap();
+            session.apply_edit(Span { start: 4, end: 5 }, b"y").unwrap();
 
             // This should still work — session now owns the buffer.
             let _ = session.source();

@@ -34,9 +34,7 @@ impl Arena {
 
     /// Create an empty arena.
     pub fn new() -> Self {
-        Self {
-            nodes: Vec::new(),
-        }
+        Self { nodes: Vec::new() }
     }
 
     /// Number of nodes currently in the arena.
@@ -114,11 +112,9 @@ pub enum ArenaError {
 impl std::fmt::Display for ArenaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArenaError::Overflow => write!(
-                f,
-                "arena overflow: exceeded maximum of {} nodes",
-                u32::MAX
-            ),
+            ArenaError::Overflow => {
+                write!(f, "arena overflow: exceeded maximum of {} nodes", u32::MAX)
+            }
         }
     }
 }

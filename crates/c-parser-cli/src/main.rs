@@ -28,11 +28,11 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use anyhow::Context;
-use clap::{error::ErrorKind, Parser, Subcommand, ValueEnum};
 use c_parser::{
-    ast_to_json, ast_to_pretty_json, create_parser, IncrementalSession, ParseInput, ParserConfig,
-    CDialect, PreprocessingMode, Span,
+    ast_to_json, ast_to_pretty_json, create_parser, CDialect, IncrementalSession, ParseInput,
+    ParserConfig, PreprocessingMode, Span,
 };
+use clap::{error::ErrorKind, Parser, Subcommand, ValueEnum};
 use tracing::{debug, error, info};
 
 // =============================================================================
@@ -229,15 +229,15 @@ fn main() {
     let config_path = resolve_config_path(cli.config.as_deref());
 
     // ---- Load TOML ----
-    let toml_config = config_path
-        .as_deref()
-        .and_then(|p| load_toml_config(p));
+    let toml_config = config_path.as_deref().and_then(load_toml_config);
 
     // ---- Resolve log level (needed early for tracing init) ----
     // Priority: --log-level > C_PARSER_LOG > TOML > default ("info")
     let effective_log_level = resolve_log_level(
         cli.log_level.as_deref(),
-        toml_config.as_ref().and_then(|c| c.parser.as_ref()?.log_level.as_deref()),
+        toml_config
+            .as_ref()
+            .and_then(|c| c.parser.as_ref()?.log_level.as_deref()),
     );
 
     // ---- Init tracing ----
@@ -249,24 +249,15 @@ fn main() {
     let effective = EffectiveConfig {
         dialect: resolve_dialect(cli.dialect, toml_config.as_ref()),
         preprocessing: resolve_preprocessing(cli.preprocessing, toml_config.as_ref()),
-        include_comments: resolve_include_comments(
-            cli.include_comments,
-            toml_config.as_ref(),
-        ),
+        include_comments: resolve_include_comments(cli.include_comments, toml_config.as_ref()),
         pretty: cli.pretty,
         output: cli.output,
     };
 
-    info!(
-        "c-parser-cli v{}",
-        env!("CARGO_PKG_VERSION")
-    );
+    info!("c-parser-cli v{}", env!("CARGO_PKG_VERSION"));
     debug!(
         "config: dialect={:?}, preprocessing={:?}, include_comments={}, pretty={}",
-        effective.dialect,
-        effective.preprocessing,
-        effective.include_comments,
-        effective.pretty,
+        effective.dialect, effective.preprocessing, effective.include_comments, effective.pretty,
     );
 
     // ---- Run command ----
@@ -298,9 +289,9 @@ fn main() {
 ///
 /// Priority: CLI `--config` > `C_PARSER_CONFIG` env var > none.
 fn resolve_config_path(cli_config: Option<&Path>) -> Option<PathBuf> {
-    cli_config.map(Path::to_path_buf).or_else(|| {
-        std::env::var("C_PARSER_CONFIG").ok().map(PathBuf::from)
-    })
+    cli_config
+        .map(Path::to_path_buf)
+        .or_else(|| std::env::var("C_PARSER_CONFIG").ok().map(PathBuf::from))
 }
 
 /// Load a TOML config file, logging any errors.
@@ -358,7 +349,10 @@ fn resolve_dialect(cli: Option<DialectArg>, toml: Option<&TomlConfig>) -> CDiale
     if let Some(arg) = cli {
         return arg.into();
     }
-    match toml.and_then(|t| t.parser.as_ref()).and_then(|p| p.dialect.as_deref()) {
+    match toml
+        .and_then(|t| t.parser.as_ref())
+        .and_then(|p| p.dialect.as_deref())
+    {
         Some("c89") => CDialect::C89,
         Some("c99") => CDialect::C99,
         Some("c11") => CDialect::C11,
@@ -414,8 +408,7 @@ fn resolve_include_comments(cli: bool, toml: Option<&TomlConfig>) -> bool {
     if cli {
         return true;
     }
-    toml
-        .and_then(|t| t.parser.as_ref())
+    toml.and_then(|t| t.parser.as_ref())
         .and_then(|p| p.include_comments)
         .unwrap_or(false)
 }
@@ -514,7 +507,13 @@ fn run_parse_incremental(
     );
 
     session
-        .apply_edit(Span { start: start as u32, end: end as u32 }, new_text)
+        .apply_edit(
+            Span {
+                start: start as u32,
+                end: end as u32,
+            },
+            new_text,
+        )
         .map_err(|e| anyhow::anyhow!("{}: {}", e.code, e.message))?;
 
     // Serialize to JSON using the session's source (which may now be owned).
@@ -562,11 +561,7 @@ fn print_diagnostics(_filename: &Path, errors: &[c_parser::ParseError]) {
         };
         eprintln!(
             "{}: {}: {} [{}.{}]",
-            severity,
-            err.code,
-            err .message,
-            err.span.start,
-            err.span.end,
+            severity, err.code, err.message, err.span.start, err.span.end,
         );
     }
 }

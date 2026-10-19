@@ -37,7 +37,10 @@ fn main() {
         std::io::Read::read_to_end(&mut f, &mut buf).expect("read source file");
         buf
     } else {
-        let bytes: usize = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(1_048_576);
+        let bytes: usize = args
+            .get(1)
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1_048_576);
         generate_fixture(bytes)
     };
 
@@ -60,10 +63,12 @@ fn main() {
 
     let ratio = peak.max_bytes as f64 / input_size as f64;
     println!("== c-parser analysis-phase memory profile ==");
-    println!("type_sizes        : Node={}B NodeData={}B TextSlice={}B",
-             std::mem::size_of::<c_parser::Node>(),
-             std::mem::size_of::<c_parser::NodeData>(),
-             std::mem::size_of::<c_parser::text_slice::TextSlice>());
+    println!(
+        "type_sizes        : Node={}B NodeData={}B TextSlice={}B",
+        std::mem::size_of::<c_parser::Node>(),
+        std::mem::size_of::<c_parser::NodeData>(),
+        std::mem::size_of::<c_parser::text_slice::TextSlice>()
+    );
     println!("source_bytes       : {}", input_size);
     println!("ast_nodes          : {}", nodes);
     println!("ast_errors         : {}", errs);

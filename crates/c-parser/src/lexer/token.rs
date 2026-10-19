@@ -127,22 +127,22 @@ pub enum TokenKind {
     StringLiteral,
 
     // ---- Single-char operators & punctuators ----
-    Plus,       // `+`
-    Minus,      // `-`
-    Star,       // `*`
-    Slash,      // `/`
-    Percent,    // `%`
-    Amp,        // `&`
-    Pipe,       // `|`
-    Caret,      // `^`
-    Tilde,      // `~`
-    Eq,         // `=`
-    Bang,       // `!`
-    Lt,         // `<`
-    Gt,         // `>`
-    Dot,        // `.`
-    Question,   // `?`
-    Colon,      // `:`
+    Plus,     // `+`
+    Minus,    // `-`
+    Star,     // `*`
+    Slash,    // `/`
+    Percent,  // `%`
+    Amp,      // `&`
+    Pipe,     // `|`
+    Caret,    // `^`
+    Tilde,    // `~`
+    Eq,       // `=`
+    Bang,     // `!`
+    Lt,       // `<`
+    Gt,       // `>`
+    Dot,      // `.`
+    Question, // `?`
+    Colon,    // `:`
 
     // ---- Double-char operators ----
     PlusPlus,   // `++`
@@ -153,7 +153,7 @@ pub enum TokenKind {
     LtEq,       // `<=`
     GtEq,       // `>=`
     EqEq,       // `==`
-    NotEq,       // `!=`
+    NotEq,      // `!=`
     AmpAmp,     // `&&`
     PipePipe,   // `||`
     StarEq,     // `*=`
@@ -168,17 +168,17 @@ pub enum TokenKind {
     RShiftEq,   // `>>=`
 
     // ---- Triple-char operators ----
-    Ellipsis,   // `...`
+    Ellipsis, // `...`
 
     // ---- Separators ----
-    Semi,       // `;`
-    Comma,      // `,`
-    LParen,     // `(`
-    RParen,     // `)`
-    LBracket,   // `[`
-    RBracket,   // `]`
-    LBrace,     // `{`
-    RBrace,     // `}`
+    Semi,     // `;`
+    Comma,    // `,`
+    LParen,   // `(`
+    RParen,   // `)`
+    LBracket, // `[`
+    RBracket, // `]`
+    LBrace,   // `{`
+    RBrace,   // `}`
 
     // ---- Preprocessor ----
     /// `#` — start of a preprocessor directive (emitted only in `SingleTu`
@@ -368,11 +368,38 @@ mod tests {
     #[test]
     fn c89_keywords_always_valid() {
         let c89_kws: &[&[u8]] = &[
-            b"auto", b"break", b"case", b"char", b"const", b"continue", b"default",
-            b"do", b"double", b"else", b"enum", b"extern", b"float", b"for", b"goto",
-            b"if", b"int", b"long", b"register", b"return", b"short", b"signed",
-            b"sizeof", b"static", b"struct", b"switch", b"typedef", b"union",
-            b"unsigned", b"void", b"volatile", b"while",
+            b"auto",
+            b"break",
+            b"case",
+            b"char",
+            b"const",
+            b"continue",
+            b"default",
+            b"do",
+            b"double",
+            b"else",
+            b"enum",
+            b"extern",
+            b"float",
+            b"for",
+            b"goto",
+            b"if",
+            b"int",
+            b"long",
+            b"register",
+            b"return",
+            b"short",
+            b"signed",
+            b"sizeof",
+            b"static",
+            b"struct",
+            b"switch",
+            b"typedef",
+            b"union",
+            b"unsigned",
+            b"void",
+            b"volatile",
+            b"while",
         ];
         for &kw in c89_kws {
             assert!(keyword_from_bytes(kw, CDialect::C89).is_some(), "{:?}", kw);
@@ -386,30 +413,56 @@ mod tests {
     fn c99_keywords_invalid_in_c89() {
         let c99_only: &[&[u8]] = &[b"inline", b"restrict", b"_Bool", b"_Complex", b"_Imaginary"];
         for &kw in c99_only {
-            assert!(keyword_from_bytes(kw, CDialect::C89).is_none(),
-                "C99 keyword {:?} should not be valid in C89", kw);
-            assert!(keyword_from_bytes(kw, CDialect::C99).is_some(),
-                "C99 keyword {:?} should be valid in C99", kw);
-            assert!(keyword_from_bytes(kw, CDialect::C11).is_some(),
-                "C99 keyword {:?} should be valid in C11", kw);
+            assert!(
+                keyword_from_bytes(kw, CDialect::C89).is_none(),
+                "C99 keyword {:?} should not be valid in C89",
+                kw
+            );
+            assert!(
+                keyword_from_bytes(kw, CDialect::C99).is_some(),
+                "C99 keyword {:?} should be valid in C99",
+                kw
+            );
+            assert!(
+                keyword_from_bytes(kw, CDialect::C11).is_some(),
+                "C99 keyword {:?} should be valid in C11",
+                kw
+            );
         }
     }
 
     #[test]
     fn c11_keywords_invalid_in_c89_c99() {
         let c11_only: &[&[u8]] = &[
-            b"_Alignas", b"_Alignof", b"_Atomic", b"_Generic",
-            b"_Noreturn", b"_Static_assert", b"_Thread_local",
+            b"_Alignas",
+            b"_Alignof",
+            b"_Atomic",
+            b"_Generic",
+            b"_Noreturn",
+            b"_Static_assert",
+            b"_Thread_local",
         ];
         for &kw in c11_only {
-            assert!(keyword_from_bytes(kw, CDialect::C89).is_none(),
-                "C11 keyword {:?} should not be valid in C89", kw);
-            assert!(keyword_from_bytes(kw, CDialect::C99).is_none(),
-                "C11 keyword {:?} should not be valid in C99", kw);
-            assert!(keyword_from_bytes(kw, CDialect::C11).is_some(),
-                "C11 keyword {:?} should be valid in C11", kw);
-            assert!(keyword_from_bytes(kw, CDialect::C17).is_some(),
-                "C11 keyword {:?} should be valid in C17", kw);
+            assert!(
+                keyword_from_bytes(kw, CDialect::C89).is_none(),
+                "C11 keyword {:?} should not be valid in C89",
+                kw
+            );
+            assert!(
+                keyword_from_bytes(kw, CDialect::C99).is_none(),
+                "C11 keyword {:?} should not be valid in C99",
+                kw
+            );
+            assert!(
+                keyword_from_bytes(kw, CDialect::C11).is_some(),
+                "C11 keyword {:?} should be valid in C11",
+                kw
+            );
+            assert!(
+                keyword_from_bytes(kw, CDialect::C17).is_some(),
+                "C11 keyword {:?} should be valid in C17",
+                kw
+            );
         }
     }
 

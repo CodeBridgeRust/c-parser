@@ -11,7 +11,7 @@
 use crate::ast::node_data::NodeData;
 use crate::ast::{NodeId, NodeKind, Span};
 use crate::error::ParseError;
-use crate::lexer::token::{TokenKind};
+use crate::lexer::token::TokenKind;
 use crate::parser::errors;
 use crate::parser::Parser;
 
@@ -82,15 +82,16 @@ impl<'a> Parser<'a> {
         // Skip stray semicolons (empty declarations)
         if self.eat(TokenKind::Semi) {
             let start = self.current().span.start;
-            return self.push_structural(
-                NodeKind::NullStatement,
-                Span {
-                    start: start.saturating_sub(1),
-                    end: start,
-                },
-                vec![],
-            )
-            .map_err(|_| self.arena_err_msg("empty declaration"));
+            return self
+                .push_structural(
+                    NodeKind::NullStatement,
+                    Span {
+                        start: start.saturating_sub(1),
+                        end: start,
+                    },
+                    vec![],
+                )
+                .map_err(|_| self.arena_err_msg("empty declaration"));
         }
 
         // `typedef`
@@ -225,15 +226,9 @@ impl<'a> Parser<'a> {
         let span = Span { start, end };
 
         let data = match node_kind {
-            NodeKind::StructDeclaration => {
-                NodeData::StructDef { name }
-            }
-            NodeKind::UnionDeclaration => {
-                NodeData::UnionDef { name }
-            }
-            NodeKind::EnumDeclaration => {
-                NodeData::EnumDef { name }
-            }
+            NodeKind::StructDeclaration => NodeData::StructDef { name },
+            NodeKind::UnionDeclaration => NodeData::UnionDef { name },
+            NodeKind::EnumDeclaration => NodeData::EnumDef { name },
             _ => unreachable!(),
         };
 
@@ -338,11 +333,8 @@ impl<'a> Parser<'a> {
                     // For simplicity, just parse parameter list normally.
                     false
                 } {
-                    loop {
-                        match self.parse_parameter_declaration() {
-                            Ok(pid) => params.push(pid),
-                            Err(_) => break,
-                        }
+                    while let Ok(pid) = self.parse_parameter_declaration() {
+                        params.push(pid);
                         if !self.eat(TokenKind::Comma) {
                             break;
                         }
@@ -461,8 +453,12 @@ impl<'a> Parser<'a> {
     fn parse_storage_class(&mut self) -> Option<crate::ast::text_slice::TextSlice> {
         let kind = self.current_kind();
         match kind {
-            TokenKind::Static | TokenKind::Extern | TokenKind::Inline
-            | TokenKind::Register | TokenKind::Const | TokenKind::Volatile
+            TokenKind::Static
+            | TokenKind::Extern
+            | TokenKind::Inline
+            | TokenKind::Register
+            | TokenKind::Const
+            | TokenKind::Volatile
             | TokenKind::Restrict => {
                 let tok = self.advance();
                 Some(self.text_slice(tok.span))
@@ -645,15 +641,16 @@ impl<'a> Parser<'a> {
                             start: id_tok.span.start,
                             end: colon.span.end,
                         };
-                        let label = self.push_with_data(
-                            NodeKind::Identifier,
-                            id_tok.span,
-                            vec![],
-                            NodeData::Identifier {
-                                name: self.text_slice(id_tok.span),
-                            },
-                        )
-                        .map_err(|_| self.arena_err_msg("label"))?;
+                        let label = self
+                            .push_with_data(
+                                NodeKind::Identifier,
+                                id_tok.span,
+                                vec![],
+                                NodeData::Identifier {
+                                    name: self.text_slice(id_tok.span),
+                                },
+                            )
+                            .map_err(|_| self.arena_err_msg("label"))?;
 
                         let stmt = self.parse_statement()?;
                         let span = Span {
@@ -661,11 +658,7 @@ impl<'a> Parser<'a> {
                             end: self.span_of(stmt).end,
                         };
                         return self
-                            .push_structural(
-                                NodeKind::LabelStatement,
-                                span,
-                                vec![label, stmt],
-                            )
+                            .push_structural(NodeKind::LabelStatement, span, vec![label, stmt])
                             .map_err(|_| self.arena_err_msg("labeled statement"));
                     }
                     // Not a label — it's an expression statement.
@@ -779,12 +772,13 @@ impl<'a> Parser<'a> {
         self.push_scope();
 
         // Init clause
-        let init = if self.check(TokenKind::Semi) {
-            None
-        } else if {
+        let is_type_keyword = {
             let cur_kind = self.current_kind();
             self.is_type_keyword(cur_kind)
-        } {
+        };
+        let init = if self.check(TokenKind::Semi) {
+            None
+        } else if is_type_keyword {
             Some(self.parse_declaration_or_function_definition()?)
         } else {
             Some(self.parse_expression()?)
@@ -961,15 +955,16 @@ impl<'a> Parser<'a> {
         let end = self.current().span.start;
         let span = Span { start, end };
 
-        let label = self.push_with_data(
-            NodeKind::Identifier,
-            label_tok.span,
-            vec![],
-            NodeData::Identifier {
-                name: self.text_slice(label_tok.span),
-            },
-        )
-        .map_err(|_| self.arena_err_msg("goto label"))?;
+        let label = self
+            .push_with_data(
+                NodeKind::Identifier,
+                label_tok.span,
+                vec![],
+                NodeData::Identifier {
+                    name: self.text_slice(label_tok.span),
+                },
+            )
+            .map_err(|_| self.arena_err_msg("goto label"))?;
 
         self.push_structural(NodeKind::GotoStatement, span, vec![label])
             .map_err(|_| self.arena_err_msg("goto statement"))
@@ -991,10 +986,8 @@ impl<'a> Parser<'a> {
 
         // Collect the rest of the line as the argument
         let arg_start = self.current().span.start;
-        while !matches!(
-            self.current_kind(),
-            TokenKind::Eof
-        ) && !is_newline_token(self.current_kind())
+        while !matches!(self.current_kind(), TokenKind::Eof)
+            && !is_newline_token(self.current_kind())
         {
             self.advance();
         }
@@ -1069,7 +1062,10 @@ impl<'a> Parser<'a> {
     }
 
     /// Expect a specific token kind and consume it. Return the token.
-    fn expect_and_eat_kind(&mut self, kind: TokenKind) -> Result<crate::lexer::token::Token, ParseError> {
+    fn expect_and_eat_kind(
+        &mut self,
+        kind: TokenKind,
+    ) -> Result<crate::lexer::token::Token, ParseError> {
         let tok = self.current();
         if tok.kind == kind {
             self.advance();
@@ -1137,7 +1133,12 @@ mod tests {
     use crate::parser::Parser;
 
     fn parse(source: &[u8]) -> Result<(Parser<'_>, NodeId), ParseError> {
-        let mut p = Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false);
+        let mut p = Parser::new(
+            source,
+            CDialect::C11,
+            PreprocessingMode::Preprocessed,
+            false,
+        );
         let id = p.parse_translation_unit()?;
         Ok((p, id))
     }
@@ -1264,7 +1265,12 @@ mod tests {
 
     #[test]
     fn parse_single_tu_directives() {
-        let mut p = Parser::new(b"#define FOO 42\nint x;", CDialect::C11, PreprocessingMode::SingleTu, false);
+        let mut p = Parser::new(
+            b"#define FOO 42\nint x;",
+            CDialect::C11,
+            PreprocessingMode::SingleTu,
+            false,
+        );
         let result = p.parse_translation_unit();
         match result {
             Ok(_) | Err(_) => {}

@@ -77,7 +77,10 @@ fn parse_empty_file() {
     let out = run_cli(&["parse", &fixtures_dir().join("empty.c").to_string_lossy()]);
     assert_success(&out, "parse empty.c");
     let stdout = stdout_str(&out);
-    assert!(stdout.contains("\"language\":\"c\""), "missing language field");
+    assert!(
+        stdout.contains("\"language\":\"c\""),
+        "missing language field"
+    );
     assert!(stdout.contains("\"nodes\":["), "missing nodes array");
 }
 
@@ -100,7 +103,10 @@ fn parse_with_pretty_flag() {
     ]);
     assert_success(&out, "parse --pretty");
     let stdout = stdout_str(&out);
-    assert!(stdout.contains("  "), "pretty output should have indentation");
+    assert!(
+        stdout.contains("  "),
+        "pretty output should have indentation"
+    );
 }
 
 #[test]
@@ -116,8 +122,7 @@ fn parse_with_output_to_file() {
     ]);
     assert_success(&out, "parse -o");
 
-    let content =
-        std::fs::read_to_string(&output_path).expect("failed to read output file");
+    let content = std::fs::read_to_string(&output_path).expect("failed to read output file");
     assert!(content.contains("\"language\":\"c\""));
 }
 
@@ -235,7 +240,11 @@ fn invalid_dialect_exits_two() {
         &fixtures_dir().join("empty.c").to_string_lossy(),
     ]);
     // clap should reject invalid enum with exit code 2.
-    assert_eq!(out.status.code(), Some(2), "should exit 2 for invalid dialect");
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "should exit 2 for invalid dialect"
+    );
 }
 
 // =========================================================================
@@ -292,8 +301,7 @@ fn output_is_valid_json() {
     ]);
     assert_success(&out, "parse");
     let stdout = stdout_str(&out).trim().to_string();
-    serde_json::from_str::<serde_json::Value>(&stdout)
-        .expect("CLI output is not valid JSON");
+    serde_json::from_str::<serde_json::Value>(&stdout).expect("CLI output is not valid JSON");
 }
 
 #[test]

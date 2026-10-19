@@ -87,7 +87,11 @@ impl<'a> Parser<'a> {
         if self.peek.is_none() {
             self.peek = self.lexer.next();
         }
-        self.peek.unwrap_or(Token::new(TokenKind::Eof, self.source.len() as u32, self.source.len() as u32))
+        self.peek.unwrap_or(Token::new(
+            TokenKind::Eof,
+            self.source.len() as u32,
+            self.source.len() as u32,
+        ))
     }
 
     /// Consume the current token and advance to the next.
@@ -118,8 +122,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Consume the current token and assert it is `kind`. If not, record an
-    /// error and proceed.
-    pub fn expect(&mut self, kind: TokenKind) -> Result<Token, ()> {
+    /// error and return the structured diagnostic.
+    pub fn expect(&mut self, kind: TokenKind) -> Result<Token, ParseError> {
         let tok = self.current();
         if tok.kind == kind {
             self.peek = None;
@@ -130,7 +134,12 @@ impl<'a> Parser<'a> {
                 &format!("{:?}", kind),
                 &format!("{:?}", tok.kind),
             ));
-            Err(())
+            Err(ParseError {
+                code: "E_SYNTAX_UNEXPECTED_TOKEN".to_string(),
+                message: format!("expected {:?}, found {:?}", kind, tok.kind),
+                span: tok.span,
+                severity: crate::error::Severity::Error,
+            })
         }
     }
 
@@ -165,8 +174,7 @@ impl<'a> Parser<'a> {
 
     /// Materialize the bytes in a span to a lossy String.
     pub fn span_str(&self, span: Span) -> String {
-        String::from_utf8_lossy(&self.source[span.start as usize..span.end as usize])
-            .into_owned()
+        String::from_utf8_lossy(&self.source[span.start as usize..span.end as usize]).into_owned()
     }
 
     // ------------------------------------------------------------------
@@ -252,10 +260,7 @@ impl<'a> Parser<'a> {
         let start = self.current().span.start;
         loop {
             match self.current_kind() {
-                TokenKind::Semi
-                | TokenKind::LBrace
-                | TokenKind::RBrace
-                | TokenKind::Eof => break,
+                TokenKind::Semi | TokenKind::LBrace | TokenKind::RBrace | TokenKind::Eof => break,
                 _ => {
                     self.advance();
                 }
@@ -376,7 +381,12 @@ mod tests {
     use crate::ast::Span;
 
     fn make_parser(source: &[u8]) -> Parser<'_> {
-        Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false)
+        Parser::new(
+            source,
+            CDialect::C11,
+            PreprocessingMode::Preprocessed,
+            false,
+        )
     }
 
     #[test]

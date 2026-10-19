@@ -123,7 +123,7 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
 name = "c-parser"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "dhat",
@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "c-parser-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "c-parser",
@@ -147,7 +147,7 @@ dependencies = [
 
 [[package]]
 name = "c-parser-ffi"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "c-parser",
  "libloading",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "c-parser-workspace"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "c-parser",
  "serde_json",

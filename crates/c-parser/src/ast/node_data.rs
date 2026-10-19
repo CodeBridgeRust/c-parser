@@ -33,9 +33,7 @@ use serde::Deserialize;
 pub enum NodeData {
     // ---- Leaf / expression payloads ----
     #[serde(rename = "Identifier")]
-    Identifier {
-        name: TextSlice,
-    },
+    Identifier { name: TextSlice },
     #[serde(rename = "IntegerLiteral")]
     IntegerLiteral {
         value: TextSlice,
@@ -61,18 +59,11 @@ pub enum NodeData {
         encoding: Option<TextSlice>,
     },
     #[serde(rename = "BinaryExpr")]
-    BinaryExpr {
-        op: TextSlice,
-    },
+    BinaryExpr { op: TextSlice },
     #[serde(rename = "UnaryExpr")]
-    UnaryExpr {
-        op: TextSlice,
-        prefix: bool,
-    },
+    UnaryExpr { op: TextSlice, prefix: bool },
     #[serde(rename = "AssignmentExpr")]
-    AssignmentExpr {
-        op: TextSlice,
-    },
+    AssignmentExpr { op: TextSlice },
     #[serde(rename = "CallExpr")]
     CallExpr {
         /// Tri-state: `None` = unknown / not distinguished (MVP).
@@ -80,9 +71,7 @@ pub enum NodeData {
         is_macro: Option<bool>,
     },
     #[serde(rename = "MemberExpr")]
-    MemberExpr {
-        op: TextSlice,
-    },
+    MemberExpr { op: TextSlice },
     #[serde(rename = "IndexExpr")]
     IndexExpr,
     #[serde(rename = "CastExpr")]
@@ -90,9 +79,7 @@ pub enum NodeData {
     #[serde(rename = "TernaryExpr")]
     TernaryExpr,
     #[serde(rename = "SizeofExpr")]
-    SizeofExpr {
-        is_variadic: bool,
-    },
+    SizeofExpr { is_variadic: bool },
 
     // ---- Declarations (shortened discriminators) ----
     #[serde(rename = "FunctionDef")]
@@ -106,13 +93,9 @@ pub enum NodeData {
         storage_class: TextSlice,
     },
     #[serde(rename = "ParameterDecl")]
-    ParameterDecl {
-        name: TextSlice,
-    },
+    ParameterDecl { name: TextSlice },
     #[serde(rename = "TypedefDecl")]
-    TypedefDecl {
-        name: TextSlice,
-    },
+    TypedefDecl { name: TextSlice },
     #[serde(rename = "StructDef")]
     StructDef {
         /// `None` for anonymous structs.
@@ -150,7 +133,5 @@ pub enum NodeData {
 
     // ---- Error ----
     #[serde(rename = "ErrorNode")]
-    ErrorNode {
-        error_index: u32,
-    },
+    ErrorNode { error_index: u32 },
 }

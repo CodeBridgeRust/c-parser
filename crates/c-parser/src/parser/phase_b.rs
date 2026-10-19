@@ -34,7 +34,7 @@
 use crate::ast::node_data::NodeData;
 use crate::ast::{NodeId, NodeKind, Span};
 use crate::error::ParseError;
-use crate::lexer::token::{TokenKind};
+use crate::lexer::token::TokenKind;
 use crate::parser::errors;
 use crate::parser::Parser;
 
@@ -137,15 +137,12 @@ fn infix_bp(kind: TokenKind) -> Option<(BP, BP)> {
         TokenKind::LShift | TokenKind::RShift => BP_SHIFT,
         TokenKind::Plus | TokenKind::Minus => BP_ADD,
         TokenKind::Star | TokenKind::Slash | TokenKind::Percent => BP_MUL,
-        TokenKind::LParen | TokenKind::LBracket | TokenKind::Dot | TokenKind::Arrow => {
-            BP_POSTFIX
-        }
+        TokenKind::LParen | TokenKind::LBracket | TokenKind::Dot | TokenKind::Arrow => BP_POSTFIX,
         TokenKind::PlusPlus | TokenKind::MinusMinus => BP_POSTFIX,
         _ => return None,
     };
 
-    let is_right_assoc = matches!(kind, TokenKind::Eq | TokenKind::Question)
-        || is_assignment(kind);
+    let is_right_assoc = matches!(kind, TokenKind::Eq | TokenKind::Question) || is_assignment(kind);
 
     let lbp = left_bp(prec);
     let rbp = if is_right_assoc {
@@ -423,9 +420,7 @@ impl<'a> Parser<'a> {
                     NodeKind::SizeofExpr,
                     span,
                     vec![operand],
-                    NodeData::SizeofExpr {
-                        is_variadic: false,
-                    },
+                    NodeData::SizeofExpr { is_variadic: false },
                 )
                 .map_err(|_| arena_err(span));
         }
@@ -445,9 +440,7 @@ impl<'a> Parser<'a> {
             NodeKind::SizeofExpr,
             span,
             vec![inner],
-            NodeData::SizeofExpr {
-                is_variadic: false,
-            },
+            NodeData::SizeofExpr { is_variadic: false },
         )
         .map_err(|_| arena_err(span))
     }
@@ -463,8 +456,7 @@ impl<'a> Parser<'a> {
         let kind = self.current_kind();
         let cur_span = self.current().span;
         let is_cast = self.is_type_keyword(kind)
-            || (kind == TokenKind::Identifier
-                && self.is_typedef(cur_span));
+            || (kind == TokenKind::Identifier && self.is_typedef(cur_span));
 
         if is_cast {
             let type_id = self.parse_type_specifier()?;
@@ -731,10 +723,7 @@ impl<'a> Parser<'a> {
 
     /// Parse `struct/union/enum [identifier] { ... }` or `struct/union/enum identifier`
     /// and return the TypeSpecifier node id.
-    pub fn parse_struct_union_enum_type(
-        &mut self,
-        start: u32,
-    ) -> Result<NodeId, ParseError> {
+    pub fn parse_struct_union_enum_type(&mut self, start: u32) -> Result<NodeId, ParseError> {
         // Optional tag name
         let tag_span = if self.current_kind() == TokenKind::Identifier {
             let t = self.advance();
@@ -782,7 +771,12 @@ mod tests {
     use crate::lexer::token::{CDialect, PreprocessingMode};
 
     fn parse_expr(source: &[u8]) -> (Parser<'_>, NodeId) {
-        let mut p = Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false);
+        let mut p = Parser::new(
+            source,
+            CDialect::C11,
+            PreprocessingMode::Preprocessed,
+            false,
+        );
         let id = p.parse_expression().unwrap();
         (p, id)
     }

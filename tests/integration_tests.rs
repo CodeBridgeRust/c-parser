@@ -6,7 +6,7 @@
 
 use c_parser::{
     ast_from_json, ast_to_json, ast_to_pretty_json, create_parser, incremental::IncrementalSession,
-    ParseInput, ParserConfig, CDialect, PreprocessingMode, Span, Severity, NodeKind, NodeData,
+    CDialect, NodeData, NodeKind, ParseInput, ParserConfig, PreprocessingMode, Severity, Span,
 };
 
 // =========================================================================
@@ -73,7 +73,10 @@ fn ast_from_json_round_trips() {
     let v2: serde_json::Value = serde_json::from_str(&json2).unwrap();
     assert_eq!(v1["root"], v2["root"]);
     assert_eq!(v1["source_length"], v2["source_length"]);
-    assert_eq!(v1["nodes"].as_array().unwrap().len(), v2["nodes"].as_array().unwrap().len());
+    assert_eq!(
+        v1["nodes"].as_array().unwrap().len(),
+        v2["nodes"].as_array().unwrap().len()
+    );
 }
 
 // =========================================================================
@@ -84,9 +87,18 @@ fn ast_from_json_round_trips() {
 fn all_dialects_parse_c89_source() {
     let source = b"int x;";
     for dialect in &[CDialect::C89, CDialect::C99, CDialect::C11, CDialect::C17] {
-        let config = ParserConfig { dialect: *dialect, ..ParserConfig::default() };
+        let config = ParserConfig {
+            dialect: *dialect,
+            ..ParserConfig::default()
+        };
         let parser = create_parser(config.clone());
-        parser.parse(ParseInput { source, filename: None, config }).unwrap();
+        parser
+            .parse(ParseInput {
+                source,
+                filename: None,
+                config,
+            })
+            .unwrap();
     }
 }
 
@@ -94,9 +106,18 @@ fn all_dialects_parse_c89_source() {
 fn c99_keywords_in_c89_are_identifiers() {
     // _Bool is a keyword in C99+, identifier in C89
     let source = b"_Bool flag;";
-    let config = ParserConfig { dialect: CDialect::C89, ..ParserConfig::default() };
+    let config = ParserConfig {
+        dialect: CDialect::C89,
+        ..ParserConfig::default()
+    };
     let parser = create_parser(config.clone());
-    parser.parse(ParseInput { source, filename: None, config }).unwrap();
+    parser
+        .parse(ParseInput {
+            source,
+            filename: None,
+            config,
+        })
+        .unwrap();
 }
 
 // =========================================================================
@@ -111,7 +132,13 @@ fn preprocessed_mode_handles_input() {
         ..ParserConfig::default()
     };
     let parser = create_parser(config.clone());
-    parser.parse(ParseInput { source, filename: None, config }).unwrap();
+    parser
+        .parse(ParseInput {
+            source,
+            filename: None,
+            config,
+        })
+        .unwrap();
 }
 
 #[test]
@@ -122,7 +149,13 @@ fn single_tu_mode_records_preprocessor_nodes() {
         ..ParserConfig::default()
     };
     let parser = create_parser(config.clone());
-    let result = parser.parse(ParseInput { source, filename: None, config }).unwrap();
+    let result = parser
+        .parse(ParseInput {
+            source,
+            filename: None,
+            config,
+        })
+        .unwrap();
     let json = ast_to_json(&result.ast, source).unwrap();
     assert!(json.contains("PreprocessorDefine"));
 }
@@ -139,7 +172,13 @@ fn include_comments_flag_works() {
         ..ParserConfig::default()
     };
     let parser = create_parser(config.clone());
-    parser.parse(ParseInput { source, filename: None, config }).unwrap();
+    parser
+        .parse(ParseInput {
+            source,
+            filename: None,
+            config,
+        })
+        .unwrap();
 }
 
 // =========================================================================
@@ -208,7 +247,15 @@ fn incremental_session_fallback_full_reparse() {
     })
     .unwrap();
     // Delete everything after first char — should trigger full reparse fallback.
-    assert!(session.apply_edit(Span { start: 0, end: src.len() as u32 }, b"i").is_ok());
+    assert!(session
+        .apply_edit(
+            Span {
+                start: 0,
+                end: src.len() as u32
+            },
+            b"i"
+        )
+        .is_ok());
 }
 
 #[test]
@@ -220,7 +267,15 @@ fn incremental_session_edit_out_of_bounds_errors() {
         config: ParserConfig::default(),
     })
     .unwrap();
-    assert!(session.apply_edit(Span { start: 100, end: 200 }, b"").is_err());
+    assert!(session
+        .apply_edit(
+            Span {
+                start: 100,
+                end: 200
+            },
+            b""
+        )
+        .is_err());
 }
 
 // =========================================================================
@@ -267,7 +322,11 @@ fn non_utf8_source_does_not_panic_and_produces_replacement() {
     let source: &[u8] = &[0xFF, 0xFE, 0xFD, b'i', b'n', b't', b' ', b'x', b';'];
     let config = ParserConfig::default();
     let parser = create_parser(config.clone());
-    match parser.parse(ParseInput { source, filename: None, config }) {
+    match parser.parse(ParseInput {
+        source,
+        filename: None,
+        config,
+    }) {
         Ok(r) => {
             // Must not panic during serialization.
             let json = ast_to_json(&r.ast, source).unwrap();
@@ -324,10 +383,20 @@ fn all_spans_in_ast_are_valid() {
     let source = b"int add(int a, int b) { return a + b; }";
     let result = parse_source(source);
     for node in &result.ast.nodes {
-        assert!(node.span.start <= node.span.end,
-            "span.start ({}) > span.end ({}) for {:?}", node.span.start, node.span.end, node.kind);
-        assert!(node.span.end <= source.len() as u32,
-            "span.end ({}) > source.len() ({}) for {:?}", node.span.end, source.len(), node.kind);
+        assert!(
+            node.span.start <= node.span.end,
+            "span.start ({}) > span.end ({}) for {:?}",
+            node.span.start,
+            node.span.end,
+            node.kind
+        );
+        assert!(
+            node.span.end <= source.len() as u32,
+            "span.end ({}) > source.len() ({}) for {:?}",
+            node.span.end,
+            source.len(),
+            node.kind
+        );
     }
 }
 
@@ -349,9 +418,19 @@ fn json_output_has_no_extra_top_level_fields() {
     let result = parse_source(b"int x;");
     let json = ast_to_json(&result.ast, b"int x;").unwrap();
     let v: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let allowed = ["version", "language", "source_length", "root", "nodes", "errors"];
+    let allowed = [
+        "version",
+        "language",
+        "source_length",
+        "root",
+        "nodes",
+        "errors",
+    ];
     for key in v.as_object().unwrap().keys() {
-        assert!(allowed.contains(&key.as_str()), "unexpected top-level field: {key}");
+        assert!(
+            allowed.contains(&key.as_str()),
+            "unexpected top-level field: {key}"
+        );
     }
 }
 
@@ -375,12 +454,20 @@ fn bom_is_stripped_and_source_length_is_correct() {
     let sl = result.ast.source_length;
     assert!(sl >= after_bom.len());
     for node in &result.ast.nodes {
-        assert!(node.span.start <= node.span.end,
+        assert!(
+            node.span.start <= node.span.end,
             "span.start ({}) > span.end ({}) for {:?}",
-            node.span.start, node.span.end, node.kind);
-        assert!(node.span.end <= sl as u32,
+            node.span.start,
+            node.span.end,
+            node.kind
+        );
+        assert!(
+            node.span.end <= sl as u32,
             "span.end ({}) > source_length ({}) for {:?}",
-            node.span.end, sl, node.kind);
+            node.span.end,
+            sl,
+            node.kind
+        );
     }
 }
 
@@ -390,8 +477,14 @@ fn bom_is_stripped_and_source_length_is_correct() {
 
 #[test]
 fn severity_serializes_lowercase() {
-    assert_eq!(serde_json::to_string(&Severity::Error).unwrap(), "\"error\"");
-    assert_eq!(serde_json::to_string(&Severity::Warning).unwrap(), "\"warning\"");
+    assert_eq!(
+        serde_json::to_string(&Severity::Error).unwrap(),
+        "\"error\""
+    );
+    assert_eq!(
+        serde_json::to_string(&Severity::Warning).unwrap(),
+        "\"warning\""
+    );
     assert_eq!(serde_json::to_string(&Severity::Note).unwrap(), "\"note\"");
     assert_eq!(serde_json::to_string(&Severity::Info).unwrap(), "\"info\"");
 }
@@ -496,4 +589,49 @@ fn parse_input_is_clone_and_debug() {
     assert_eq!(cloned.filename, input.filename);
     // Debug format should not panic.
     let _ = format!("{:?}", cloned);
+}
+
+// =========================================================================
+// Send + Sync assertions (compile-time contract)
+// =========================================================================
+
+/// Compile-time witness: only types that are both `Send` and `Sync` can be
+/// passed as `T`.  This locks the thread-safety contract required by
+/// `ТЗ §6.4` (independent parser instances must be usable in parallel) and
+/// `ТЗ §2` principle 7 ("the parser must be `Send + Sync`").
+fn assert_send_sync<T: Send + Sync>() {}
+
+#[test]
+fn public_parser_types_are_send_and_sync() {
+    use c_parser::{
+        ast::text_slice::TextSlice, Arena, Ast, CDialect, IncrementalConfig, IncrementalSession,
+        Node, NodeData, NodeId, NodeKind, ParseError, ParseInput, ParseResult, ParserConfig,
+        PreprocessingMode, Severity, Span,
+    };
+
+    // Public types (owned / arena / AST model).
+    assert_send_sync::<Arena>();
+    assert_send_sync::<Ast>();
+    assert_send_sync::<Node>();
+    assert_send_sync::<NodeData>();
+    assert_send_sync::<NodeKind>();
+    assert_send_sync::<NodeId>();
+    assert_send_sync::<Span>();
+    assert_send_sync::<TextSlice>();
+    assert_send_sync::<ParseError>();
+    assert_send_sync::<Severity>();
+    assert_send_sync::<ParseResult>();
+
+    // Types with references/lifetimes: `&[u8]` and `&str` are `Sync`, and the
+    // configuration types are plain data, so these are `Send + Sync`.
+    assert_send_sync::<ParseInput<'_>>();
+    assert_send_sync::<ParserConfig>();
+    assert_send_sync::<IncrementalConfig>();
+    assert_send_sync::<CDialect>();
+    assert_send_sync::<PreprocessingMode>();
+    assert_send_sync::<IncrementalSession<'_>>();
+
+    // The plugin contract `ParserPlugin: Send + Sync` implies its boxed form
+    // is also `Send + Sync`.
+    assert_send_sync::<Box<dyn c_parser::ParserPlugin>>();
 }

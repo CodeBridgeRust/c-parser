@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+# The compatibility matrix mirrors ТЗ §10:
+#   Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64).
+# `ubuntu-24.04`        -> Linux x86_64
+# `ubuntu-24.04-arm`    -> Linux aarch64
+# `macos-13`            -> macOS x86_64 (Intel)
+# `macos-14`            -> macOS aarch64 (Apple Silicon)
+# `windows-latest`      -> Windows x86_64
+jobs:
+  fmt:
+    name: Format (rustfmt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy (-D warnings)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, name: linux-x86_64 }
+          - { os: ubuntu-24.04-arm, name: linux-aarch64 }
+          - { os: macos-13, name: macos-x86_64 }
+          - { os: macos-14, name: macos-aarch64 }
+          - { os: windows-latest, name: windows-x86_64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, name: linux-x86_64 }
+          - { os: ubuntu-24.04-arm, name: linux-aarch64 }
+          - { os: macos-13, name: macos-x86_64 }
+          - { os: macos-14, name: macos-aarch64 }
+          - { os: windows-latest, name: windows-x86_64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  # Optional: verify the cdylib (c-parser-ffi) builds with the correct symbols.
+  build:
+    name: Build (release)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, name: linux-x86_64 }
+          - { os: ubuntu-24.04-arm, name: linux-aarch64 }
+          - { os: macos-13, name: macos-x86_64 }
+          - { os: macos-14, name: macos-aarch64 }
+          - { os: windows-latest, name: windows-x86_64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --workspace --release

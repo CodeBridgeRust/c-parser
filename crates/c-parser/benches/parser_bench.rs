@@ -21,7 +21,7 @@
 //! `sqlite3.c`.  See `docs/benchmarking.md` for the manual verification
 //! instructions using the prebuilt binaries and C test files.
 
-use c_parser::{ParserConfig, ParseInput};
+use c_parser::{ParseInput, ParserConfig};
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 
 /// Build a deterministic, realistic ~1 MB C translation unit.
@@ -148,9 +148,13 @@ fn bench_end_to_end(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("end_to_end");
     group.throughput(Throughput::Bytes(p1m.len() as u64));
-    group.bench_with_input(BenchmarkId::from_parameter("parse+serialize"), &p1m, |b, src| {
-        b.iter(|| parse_and_serialize(src));
-    });
+    group.bench_with_input(
+        BenchmarkId::from_parameter("parse+serialize"),
+        &p1m,
+        |b, src| {
+            b.iter(|| parse_and_serialize(src));
+        },
+    );
     group.finish();
 }
 

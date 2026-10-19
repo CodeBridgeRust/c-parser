@@ -42,8 +42,7 @@ fn parse_fixture_to_json(path: &std::path::Path) -> (String, Vec<u8>) {
             config,
         })
         .expect("fatal parse error on fixture");
-    let json =
-        c_parser::ast_to_json(&result.ast, &source).expect("JSON serialization failed");
+    let json = c_parser::ast_to_json(&result.ast, &source).expect("JSON serialization failed");
     (json, source)
 }
 
@@ -159,7 +158,14 @@ pub fn validate_against_schema(ast_json: &Value) -> Vec<SchemaError> {
     };
 
     // Required top-level fields.
-    for field in &["version", "language", "source_length", "root", "nodes", "errors"] {
+    for field in &[
+        "version",
+        "language",
+        "source_length",
+        "root",
+        "nodes",
+        "errors",
+    ] {
         if !obj.contains_key(*field) {
             errors.push(SchemaError {
                 message: format!("missing required top-level field: {field}"),
@@ -217,10 +223,7 @@ pub fn validate_against_schema(ast_json: &Value) -> Vec<SchemaError> {
     };
 
     // errors must be an array.
-    if !obj
-        .get("errors")
-        .map_or(false, |v| v.is_array())
-    {
+    if !obj.get("errors").is_some_and(|v| v.is_array()) {
         errors.push(SchemaError {
             message: "errors is not an array".into(),
         });
@@ -228,7 +231,12 @@ pub fn validate_against_schema(ast_json: &Value) -> Vec<SchemaError> {
 
     // No additional top-level properties.
     let allowed_top: HashSet<&str> = [
-        "version", "language", "source_length", "root", "nodes", "errors",
+        "version",
+        "language",
+        "source_length",
+        "root",
+        "nodes",
+        "errors",
     ]
     .iter()
     .copied()
@@ -316,12 +324,12 @@ fn validate_node(node: &Value, idx: usize) -> Vec<SchemaError> {
 
     // span must have start and end (non-negative integers).
     if let Some(span) = obj.get("span") {
-        if !span.get("start").map_or(false, |v| v.is_u64()) {
+        if !span.get("start").is_some_and(|v| v.is_u64()) {
             errors.push(SchemaError {
                 message: format!("node[{idx}] span.start missing or not integer"),
             });
         }
-        if !span.get("end").map_or(false, |v| v.is_u64()) {
+        if !span.get("end").is_some_and(|v| v.is_u64()) {
             errors.push(SchemaError {
                 message: format!("node[{idx}] span.end missing or not integer"),
             });
@@ -333,9 +341,7 @@ fn validate_node(node: &Value, idx: usize) -> Vec<SchemaError> {
         for (ci, child) in children.iter().enumerate() {
             if !child.is_u64() {
                 errors.push(SchemaError {
-                    message: format!(
-                        "node[{idx}] children[{ci}] is not an integer"
-                    ),
+                    message: format!("node[{idx}] children[{ci}] is not an integer"),
                 });
             }
         }
@@ -345,18 +351,14 @@ fn validate_node(node: &Value, idx: usize) -> Vec<SchemaError> {
     let data = obj.get("data");
     if is_structural_kind(kind) {
         // data must be null.
-        if data.map_or(false, |v| !v.is_null()) {
+        if data.is_some_and(|v| !v.is_null()) {
             errors.push(SchemaError {
-                message: format!(
-                    "node[{idx}] kind={kind} is structural but data is not null"
-                ),
+                message: format!("node[{idx}] kind={kind} is structural but data is not null"),
             });
         }
-    } else if data.map_or(true, |v| v.is_null()) {
+    } else if data.is_none() || data.is_some_and(|v| v.is_null()) {
         errors.push(SchemaError {
-            message: format!(
-                "node[{idx}] kind={kind} is not structural but data is null"
-            ),
+            message: format!("node[{idx}] kind={kind} is not structural but data is null"),
         });
     } else if let Some(data_obj) = data.and_then(|v| v.as_object()) {
         let expected_type = expected_data_type(kind);
@@ -421,10 +423,7 @@ pub struct InvariantError {
 pub fn validate_ast_invariants(ast_json: &Value) -> Vec<InvariantError> {
     let mut errors = Vec::new();
 
-    let source_length = match ast_json
-        .get("source_length")
-        .and_then(|v| v.as_u64())
-    {
+    let source_length = match ast_json.get("source_length").and_then(|v| v.as_u64()) {
         Some(n) => n as usize,
         None => {
             errors.push(InvariantError {
@@ -481,9 +480,7 @@ pub fn validate_ast_invariants(ast_json: &Value) -> Vec<InvariantError> {
             }
             if end as usize > source_length {
                 errors.push(InvariantError {
-                    message: format!(
-                        "span.end ({end}) > source_length ({source_length})"
-                    ),
+                    message: format!("span.end ({end}) > source_length ({source_length})"),
                     node_idx: Some(i),
                 });
             }
@@ -508,9 +505,7 @@ pub fn validate_ast_invariants(ast_json: &Value) -> Vec<InvariantError> {
         if let Some(kind) = node.get("kind").and_then(|v| v.as_str()) {
             if kind == "ErrorNode" {
                 if let Some(data) = node.get("data") {
-                    if let Some(ei) =
-                        data.get("error_index").and_then(|v| v.as_u64())
-                    {
+                    if let Some(ei) = data.get("error_index").and_then(|v| v.as_u64()) {
                         if ei as usize >= errors_arr.len() {
                             errors.push(InvariantError {
                                 message: format!(
@@ -536,8 +531,7 @@ pub fn validate_ast_invariants(ast_json: &Value) -> Vec<InvariantError> {
 
 #[test]
 fn ast_schema_json_is_valid_json() {
-    let schema_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("docs/ast-schema.json");
+    let schema_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/ast-schema.json");
     let text = std::fs::read_to_string(&schema_path).expect("failed to read schema");
     serde_json::from_str::<Value>(&text).expect("ast-schema.json is not valid JSON");
 }
@@ -564,8 +558,7 @@ fn empty_file_produces_valid_ast() {
 
 #[test]
 fn simple_function_produces_valid_ast() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("simple_function.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("simple_function.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
     assert!(validate_ast_invariants(&value).is_empty());
@@ -573,8 +566,7 @@ fn simple_function_produces_valid_ast() {
 
 #[test]
 fn hello_world_produces_valid_ast() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("hello_world.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("hello_world.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
     assert!(validate_ast_invariants(&value).is_empty());
@@ -582,8 +574,7 @@ fn hello_world_produces_valid_ast() {
 
 #[test]
 fn struct_enum_produces_valid_ast() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("struct_enum.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("struct_enum.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
     assert!(validate_ast_invariants(&value).is_empty());
@@ -591,8 +582,7 @@ fn struct_enum_produces_valid_ast() {
 
 #[test]
 fn control_flow_produces_valid_ast() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("control_flow.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("control_flow.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
     assert!(validate_ast_invariants(&value).is_empty());
@@ -600,8 +590,7 @@ fn control_flow_produces_valid_ast() {
 
 #[test]
 fn expressions_produces_valid_ast() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("expressions.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("expressions.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
     assert!(validate_ast_invariants(&value).is_empty());
@@ -609,12 +598,15 @@ fn expressions_produces_valid_ast() {
 
 #[test]
 fn syntax_error_produces_valid_ast_with_errors() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("syntax_error.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("syntax_error.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
 
     let schema_errors = validate_against_schema(&value);
-    assert!(schema_errors.is_empty(), "Schema violations: {:?}", schema_errors);
+    assert!(
+        schema_errors.is_empty(),
+        "Schema violations: {:?}",
+        schema_errors
+    );
 
     let invariant_errors = validate_ast_invariants(&value);
     assert!(
@@ -629,8 +621,7 @@ fn syntax_error_produces_valid_ast_with_errors() {
 
 #[test]
 fn bom_file_handled_correctly() {
-    let source_no_bom =
-        std::fs::read(fixtures_dir().join("bom.c")).expect("failed to read bom.c");
+    let source_no_bom = std::fs::read(fixtures_dir().join("bom.c")).expect("failed to read bom.c");
     let mut source = Vec::with_capacity(BOM.len() + source_no_bom.len());
     source.extend_from_slice(BOM);
     source.extend_from_slice(&source_no_bom);
@@ -644,8 +635,7 @@ fn bom_file_handled_correctly() {
             config,
         })
         .expect("fatal parse error");
-    let json =
-        c_parser::ast_to_json(&result.ast, &source).expect("JSON serialization failed");
+    let json = c_parser::ast_to_json(&result.ast, &source).expect("JSON serialization failed");
 
     let value: Value = serde_json::from_str(&json).unwrap();
     assert!(validate_against_schema(&value).is_empty());
@@ -666,8 +656,7 @@ fn non_utf8_source_does_not_panic() {
             config,
         })
         .expect("should not panic");
-    let json =
-        c_parser::ast_to_json(&result.ast, source).expect("should serialize");
+    let json = c_parser::ast_to_json(&result.ast, source).expect("should serialize");
     // Replacement characters may or may not appear depending on error recovery.
     // What matters: parser didn't panic, output is valid JSON, schema is valid.
     let value: Value = serde_json::from_str(&json).unwrap();
@@ -742,8 +731,7 @@ fn error_node_connectivity() {
             config,
         })
         .expect("fatal parse error");
-    let json =
-        c_parser::ast_to_json(&result.ast, source).expect("JSON serialization failed");
+    let json = c_parser::ast_to_json(&result.ast, source).expect("JSON serialization failed");
     let value: Value = serde_json::from_str(&json).unwrap();
 
     let errors_arr = value["errors"].as_array().unwrap();
@@ -753,12 +741,8 @@ fn error_node_connectivity() {
     for node in nodes {
         if node["kind"] == "ErrorNode" {
             found_error_nodes = true;
-            let error_index =
-                node["data"]["error_index"].as_u64().unwrap() as usize;
-            assert!(
-                error_index < errors_arr.len(),
-                "error_index out of bounds"
-            );
+            let error_index = node["data"]["error_index"].as_u64().unwrap() as usize;
+            assert!(error_index < errors_arr.len(), "error_index out of bounds");
         }
     }
     if !errors_arr.is_empty() {
@@ -848,7 +832,7 @@ fn all_fixtures_produce_valid_json() {
     let files: Vec<_> = std::fs::read_dir(&dir)
         .unwrap()
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "c"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "c"))
         .map(|e| e.path())
         .collect();
 
@@ -880,38 +864,38 @@ fn output_contains_all_required_top_level_fields() {
     let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("empty.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     for field in &[
-        "version", "language", "source_length", "root", "nodes", "errors",
+        "version",
+        "language",
+        "source_length",
+        "root",
+        "nodes",
+        "errors",
     ] {
-        assert!(value.get(field).is_some(), "missing top-level field: {field}");
+        assert!(
+            value.get(field).is_some(),
+            "missing top-level field: {field}"
+        );
     }
 }
 
 #[test]
 fn node_has_all_required_fields() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("simple_function.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("simple_function.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     for (i, node) in value["nodes"].as_array().unwrap().iter().enumerate() {
         for field in &["kind", "span", "children", "data"] {
-            assert!(
-                node.get(field).is_some(),
-                "node[{i}] missing: {field}"
-            );
+            assert!(node.get(field).is_some(), "node[{i}] missing: {field}");
         }
     }
 }
 
 #[test]
 fn error_has_all_required_fields() {
-    let (json, _source) =
-        parse_fixture_to_json(&fixtures_dir().join("syntax_error.c"));
+    let (json, _source) = parse_fixture_to_json(&fixtures_dir().join("syntax_error.c"));
     let value: Value = serde_json::from_str(&json).unwrap();
     for (i, err) in value["errors"].as_array().unwrap().iter().enumerate() {
         for field in &["code", "message", "span", "severity"] {
-            assert!(
-                err.get(field).is_some(),
-                "errors[{i}] missing: {field}"
-            );
+            assert!(err.get(field).is_some(), "errors[{i}] missing: {field}");
         }
     }
 }

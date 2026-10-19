@@ -69,8 +69,8 @@ impl From<crate::arena::ArenaError> for ParseError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::Span;
     use crate::arena::ArenaError;
+    use crate::ast::Span;
 
     #[test]
     fn severity_display() {
@@ -90,14 +90,8 @@ mod tests {
             serde_json::to_string(&Severity::Warning).unwrap(),
             "\"warning\""
         );
-        assert_eq!(
-            serde_json::to_string(&Severity::Note).unwrap(),
-            "\"note\""
-        );
-        assert_eq!(
-            serde_json::to_string(&Severity::Info).unwrap(),
-            "\"info\""
-        );
+        assert_eq!(serde_json::to_string(&Severity::Note).unwrap(), "\"note\"");
+        assert_eq!(serde_json::to_string(&Severity::Info).unwrap(), "\"info\"");
     }
 
     #[test]

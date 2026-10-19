@@ -44,12 +44,7 @@ impl Node {
     }
 
     /// Create a node with payload.
-    pub fn with_data(
-        kind: NodeKind,
-        span: Span,
-        children: Vec<NodeId>,
-        data: NodeData,
-    ) -> Self {
+    pub fn with_data(kind: NodeKind, span: Span, children: Vec<NodeId>, data: NodeData) -> Self {
         Self {
             kind,
             span,

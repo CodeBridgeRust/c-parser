@@ -218,7 +218,7 @@ fn snapshot_compound_statement() {
     // The function body itself is a CompoundStatement; an inner {} adds another.
     let v = parse_source_to_value(b"int f(void) {{}}");
     let cs = nodes_of_kind(&v, "CompoundStatement");
-    assert!(cs.len() >= 1, "expected at least 1 CompoundStatement");
+    assert!(!cs.is_empty(), "expected at least 1 CompoundStatement");
     assert_eq!(cs[0]["data"], Value::Null);
 }
 

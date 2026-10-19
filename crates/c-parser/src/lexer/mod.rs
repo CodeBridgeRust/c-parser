@@ -862,7 +862,13 @@ mod tests {
 
     /// Helper: collect all tokens from source (not including Eof).
     fn lex(source: &[u8]) -> Vec<Token> {
-        Lexer::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false).collect()
+        Lexer::new(
+            source,
+            CDialect::C11,
+            PreprocessingMode::Preprocessed,
+            false,
+        )
+        .collect()
     }
 
     /// Helper: collect all tokens with `include_comments: true`.
@@ -901,7 +907,12 @@ mod tests {
     #[test]
     fn source_length_reflects_stripped_bom() {
         let with_bom: &[u8] = &[0xEF, 0xBB, 0xBF, b'h', b'e', b'l', b'l', b'o'];
-        let lexer = Lexer::new(with_bom, CDialect::C11, PreprocessingMode::Preprocessed, false);
+        let lexer = Lexer::new(
+            with_bom,
+            CDialect::C11,
+            PreprocessingMode::Preprocessed,
+            false,
+        );
         assert_eq!(lexer.source().len(), 5); // 8 - 3
     }
 
@@ -954,13 +965,16 @@ mod tests {
         let source = b"inline restrict _Bool _Complex _Imaginary";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Inline,
-            TokenKind::Restrict,
-            TokenKind::C99Bool,
-            TokenKind::C99Complex,
-            TokenKind::C99Imaginary,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Inline,
+                TokenKind::Restrict,
+                TokenKind::C99Bool,
+                TokenKind::C99Complex,
+                TokenKind::C99Imaginary,
+            ]
+        );
     }
 
     #[test]
@@ -968,11 +982,14 @@ mod tests {
         let source = b"inline restrict _Bool";
         let tokens = lex_dialect(source, CDialect::C89);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Identifier,
-            TokenKind::Identifier,
-            TokenKind::Identifier,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+            ]
+        );
     }
 
     #[test]
@@ -980,15 +997,18 @@ mod tests {
         let source = b"_Alignas _Alignof _Atomic _Generic _Noreturn _Static_assert _Thread_local";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::C11Alignas,
-            TokenKind::C11Alignof,
-            TokenKind::C11Atomic,
-            TokenKind::C11Generic,
-            TokenKind::C11Noreturn,
-            TokenKind::C11StaticAssert,
-            TokenKind::C11ThreadLocal,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::C11Alignas,
+                TokenKind::C11Alignof,
+                TokenKind::C11Atomic,
+                TokenKind::C11Generic,
+                TokenKind::C11Noreturn,
+                TokenKind::C11StaticAssert,
+                TokenKind::C11ThreadLocal,
+            ]
+        );
     }
 
     // -- Identifiers --------------------------------------------------------
@@ -1015,9 +1035,18 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 3]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"0");
-        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"42");
-        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"999");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"0"
+        );
+        assert_eq!(
+            &source[tokens[1].span.start as usize..tokens[1].span.end as usize],
+            b"42"
+        );
+        assert_eq!(
+            &source[tokens[2].span.start as usize..tokens[2].span.end as usize],
+            b"999"
+        );
     }
 
     #[test]
@@ -1026,8 +1055,14 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 4]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"0x0");
-        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"0xDEAD");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"0x0"
+        );
+        assert_eq!(
+            &source[tokens[1].span.start as usize..tokens[1].span.end as usize],
+            b"0xDEAD"
+        );
     }
 
     #[test]
@@ -1044,9 +1079,18 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::IntegerLiteral; 9]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"42u");
-        assert_eq!(&source[tokens[4].span.start as usize..tokens[4].span.end as usize], b"42ul");
-        assert_eq!(&source[tokens[6].span.start as usize..tokens[6].span.end as usize], b"42ll");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"42u"
+        );
+        assert_eq!(
+            &source[tokens[4].span.start as usize..tokens[4].span.end as usize],
+            b"42ul"
+        );
+        assert_eq!(
+            &source[tokens[6].span.start as usize..tokens[6].span.end as usize],
+            b"42ll"
+        );
     }
 
     // -- Float literals -----------------------------------------------------
@@ -1057,12 +1101,30 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::FloatLiteral; 7]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"3.14");
-        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b".5");
-        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"1e10");
-        assert_eq!(&source[tokens[3].span.start as usize..tokens[3].span.end as usize], b"2.0f");
-        assert_eq!(&source[tokens[4].span.start as usize..tokens[4].span.end as usize], b"3.14L");
-        assert_eq!(&source[tokens[5].span.start as usize..tokens[5].span.end as usize], b"1e-5");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"3.14"
+        );
+        assert_eq!(
+            &source[tokens[1].span.start as usize..tokens[1].span.end as usize],
+            b".5"
+        );
+        assert_eq!(
+            &source[tokens[2].span.start as usize..tokens[2].span.end as usize],
+            b"1e10"
+        );
+        assert_eq!(
+            &source[tokens[3].span.start as usize..tokens[3].span.end as usize],
+            b"2.0f"
+        );
+        assert_eq!(
+            &source[tokens[4].span.start as usize..tokens[4].span.end as usize],
+            b"3.14L"
+        );
+        assert_eq!(
+            &source[tokens[5].span.start as usize..tokens[5].span.end as usize],
+            b"1e-5"
+        );
     }
 
     // -- Character literals -------------------------------------------------
@@ -1081,9 +1143,18 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::CharLiteral; 3]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"L'a'");
-        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"u'a'");
-        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"U'a'");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"L'a'"
+        );
+        assert_eq!(
+            &source[tokens[1].span.start as usize..tokens[1].span.end as usize],
+            b"u'a'"
+        );
+        assert_eq!(
+            &source[tokens[2].span.start as usize..tokens[2].span.end as usize],
+            b"U'a'"
+        );
     }
 
     // -- String literals ----------------------------------------------------
@@ -1102,10 +1173,22 @@ mod tests {
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, vec![TokenKind::StringLiteral; 4]);
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"L\"wide\"");
-        assert_eq!(&source[tokens[1].span.start as usize..tokens[1].span.end as usize], b"u\"utf16\"");
-        assert_eq!(&source[tokens[2].span.start as usize..tokens[2].span.end as usize], b"U\"utf32\"");
-        assert_eq!(&source[tokens[3].span.start as usize..tokens[3].span.end as usize], b"u8\"utf8\"");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"L\"wide\""
+        );
+        assert_eq!(
+            &source[tokens[1].span.start as usize..tokens[1].span.end as usize],
+            b"u\"utf16\""
+        );
+        assert_eq!(
+            &source[tokens[2].span.start as usize..tokens[2].span.end as usize],
+            b"U\"utf32\""
+        );
+        assert_eq!(
+            &source[tokens[3].span.start as usize..tokens[3].span.end as usize],
+            b"u8\"utf8\""
+        );
     }
 
     // -- Operators ----------------------------------------------------------
@@ -1115,14 +1198,27 @@ mod tests {
         let source = b"+ - * / % = < > ! & | ^ ~ . ? :";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Plus, TokenKind::Minus, TokenKind::Star,
-            TokenKind::Slash, TokenKind::Percent, TokenKind::Eq,
-            TokenKind::Lt, TokenKind::Gt, TokenKind::Bang,
-            TokenKind::Amp, TokenKind::Pipe, TokenKind::Caret,
-            TokenKind::Tilde, TokenKind::Dot, TokenKind::Question,
-            TokenKind::Colon,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Plus,
+                TokenKind::Minus,
+                TokenKind::Star,
+                TokenKind::Slash,
+                TokenKind::Percent,
+                TokenKind::Eq,
+                TokenKind::Lt,
+                TokenKind::Gt,
+                TokenKind::Bang,
+                TokenKind::Amp,
+                TokenKind::Pipe,
+                TokenKind::Caret,
+                TokenKind::Tilde,
+                TokenKind::Dot,
+                TokenKind::Question,
+                TokenKind::Colon,
+            ]
+        );
     }
 
     #[test]
@@ -1130,15 +1226,32 @@ mod tests {
         let source = b"++ -- -> << >> <= >= == != && || *= /= %= += -= &= |= ^= <<= >>=";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::PlusPlus, TokenKind::MinusMinus, TokenKind::Arrow,
-            TokenKind::LShift, TokenKind::RShift, TokenKind::LtEq, TokenKind::GtEq,
-            TokenKind::EqEq, TokenKind::NotEq, TokenKind::AmpAmp, TokenKind::PipePipe,
-            TokenKind::StarEq, TokenKind::SlashEq, TokenKind::PercentEq,
-            TokenKind::PlusEq, TokenKind::MinusEq, TokenKind::AmpEq,
-            TokenKind::PipeEq, TokenKind::CaretEq, TokenKind::LShiftEq,
-            TokenKind::RShiftEq,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::PlusPlus,
+                TokenKind::MinusMinus,
+                TokenKind::Arrow,
+                TokenKind::LShift,
+                TokenKind::RShift,
+                TokenKind::LtEq,
+                TokenKind::GtEq,
+                TokenKind::EqEq,
+                TokenKind::NotEq,
+                TokenKind::AmpAmp,
+                TokenKind::PipePipe,
+                TokenKind::StarEq,
+                TokenKind::SlashEq,
+                TokenKind::PercentEq,
+                TokenKind::PlusEq,
+                TokenKind::MinusEq,
+                TokenKind::AmpEq,
+                TokenKind::PipeEq,
+                TokenKind::CaretEq,
+                TokenKind::LShiftEq,
+                TokenKind::RShiftEq,
+            ]
+        );
     }
 
     #[test]
@@ -1156,12 +1269,19 @@ mod tests {
         let source = b"; , ( ) [ ] { }";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Semi, TokenKind::Comma,
-            TokenKind::LParen, TokenKind::RParen,
-            TokenKind::LBracket, TokenKind::RBracket,
-            TokenKind::LBrace, TokenKind::RBrace,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Semi,
+                TokenKind::Comma,
+                TokenKind::LParen,
+                TokenKind::RParen,
+                TokenKind::LBracket,
+                TokenKind::RBracket,
+                TokenKind::LBrace,
+                TokenKind::RBrace,
+            ]
+        );
     }
 
     // -- Comments -----------------------------------------------------------
@@ -1171,10 +1291,17 @@ mod tests {
         let source = b"int /* block */ x; // line\nint y;";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Int, TokenKind::Identifier, TokenKind::Semi,
-            TokenKind::Int, TokenKind::Identifier, TokenKind::Semi,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Int,
+                TokenKind::Identifier,
+                TokenKind::Semi,
+                TokenKind::Int,
+                TokenKind::Identifier,
+                TokenKind::Semi,
+            ]
+        );
     }
 
     #[test]
@@ -1182,11 +1309,14 @@ mod tests {
         let source = b"/* block */ // line\nint";
         let tokens = lex_with_comments(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::BlockComment,
-            TokenKind::LineComment,
-            TokenKind::Int,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::BlockComment,
+                TokenKind::LineComment,
+                TokenKind::Int,
+            ]
+        );
     }
 
     #[test]
@@ -1196,7 +1326,10 @@ mod tests {
         assert_eq!(tokens[0].kind, TokenKind::LineComment);
         assert_eq!(tokens[0].span.start, 0);
         assert_eq!(tokens[0].span.end, 14); // "// hello world"
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"// hello world");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"// hello world"
+        );
     }
 
     #[test]
@@ -1206,7 +1339,10 @@ mod tests {
         assert_eq!(tokens[0].kind, TokenKind::BlockComment);
         assert_eq!(tokens[0].span.start, 0);
         assert_eq!(tokens[0].span.end, 11); // "/* block */"
-        assert_eq!(&source[tokens[0].span.start as usize..tokens[0].span.end as usize], b"/* block */");
+        assert_eq!(
+            &source[tokens[0].span.start as usize..tokens[0].span.end as usize],
+            b"/* block */"
+        );
     }
 
     // -- Hash / preprocessor ------------------------------------------------
@@ -1251,12 +1387,21 @@ mod tests {
         let source = b"int main(void) { return 0; }";
         let tokens = lex(source);
         let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind).collect();
-        assert_eq!(kinds, vec![
-            TokenKind::Int, TokenKind::Identifier, TokenKind::LParen,
-            TokenKind::Void, TokenKind::RParen, TokenKind::LBrace,
-            TokenKind::Return, TokenKind::IntegerLiteral, TokenKind::Semi,
-            TokenKind::RBrace,
-        ]);
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Int,
+                TokenKind::Identifier,
+                TokenKind::LParen,
+                TokenKind::Void,
+                TokenKind::RParen,
+                TokenKind::LBrace,
+                TokenKind::Return,
+                TokenKind::IntegerLiteral,
+                TokenKind::Semi,
+                TokenKind::RBrace,
+            ]
+        );
     }
 
     #[test]

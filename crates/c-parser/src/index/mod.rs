@@ -217,10 +217,7 @@ mod tests {
         let nodes = make_nodes(&[(0, 100), (10, 50), (60, 90)]);
         let idx = SpanIndex::build(&nodes);
         // Range exactly matching (10, 50) -> id 1
-        assert_eq!(
-            idx.find_covering(Span { start: 10, end: 50 }),
-            Some(1)
-        );
+        assert_eq!(idx.find_covering(Span { start: 10, end: 50 }), Some(1));
     }
 
     #[test]
@@ -232,10 +229,7 @@ mod tests {
         let nodes = make_nodes(&[(0, 200), (5, 150), (20, 140), (25, 80)]);
         let idx = SpanIndex::build(&nodes);
         // Range (30, 40) — all four cover it.  Tightest is IfStatement (25..80).
-        assert_eq!(
-            idx.find_covering(Span { start: 30, end: 40 }),
-            Some(3)
-        );
+        assert_eq!(idx.find_covering(Span { start: 30, end: 40 }), Some(3));
     }
 
     #[test]
@@ -243,10 +237,7 @@ mod tests {
         let nodes = make_nodes(&[(0, 50), (60, 100)]);
         let idx = SpanIndex::build(&nodes);
         // Range spans from 55 to 65 — crosses the gap
-        assert_eq!(
-            idx.find_covering(Span { start: 55, end: 65 }),
-            None
-        );
+        assert_eq!(idx.find_covering(Span { start: 55, end: 65 }), None);
     }
 
     #[test]
