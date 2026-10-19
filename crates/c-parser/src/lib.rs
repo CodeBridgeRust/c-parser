@@ -29,7 +29,7 @@ pub mod serialize;
 
 // Re-export core types for a flat public API surface.
 pub use arena::Arena;
-pub use ast::{Ast, Node, NodeData, NodeId, NodeKind, Span};
+pub use ast::{Ast, Node, NodeData, NodeId, NodeKind, Span, text_slice};
 pub use error::{ParseError, Severity};
 pub use incremental::IncrementalSession;
 pub use lexer::token::{CDialect, PreprocessingMode};

@@ -1136,7 +1136,7 @@ mod tests {
     use crate::lexer::token::{CDialect, PreprocessingMode};
     use crate::parser::Parser;
 
-    fn parse(source: &[u8]) -> Result<(Parser, NodeId), ParseError> {
+    fn parse(source: &[u8]) -> Result<(Parser<'_>, NodeId), ParseError> {
         let mut p = Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false);
         let id = p.parse_translation_unit()?;
         Ok((p, id))

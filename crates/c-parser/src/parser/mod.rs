@@ -354,7 +354,7 @@ mod tests {
     use super::*;
     use crate::ast::Span;
 
-    fn make_parser(source: &[u8]) -> Parser {
+    fn make_parser(source: &[u8]) -> Parser<'_> {
         Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false)
     }
 

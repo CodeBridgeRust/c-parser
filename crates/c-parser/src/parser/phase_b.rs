@@ -781,7 +781,7 @@ mod tests {
     use super::*;
     use crate::lexer::token::{CDialect, PreprocessingMode};
 
-    fn parse_expr(source: &[u8]) -> (Parser, NodeId) {
+    fn parse_expr(source: &[u8]) -> (Parser<'_>, NodeId) {
         let mut p = Parser::new(source, CDialect::C11, PreprocessingMode::Preprocessed, false);
         let id = p.parse_expression().unwrap();
         (p, id)

@@ -184,4 +184,44 @@ mod tests {
         assert_eq!(arena.len(), 0);
         assert!(arena.nodes.capacity() >= 100);
     }
+
+    #[test]
+    fn default_creates_empty_arena() {
+        let arena = Arena::default();
+        assert!(arena.is_empty());
+        assert_eq!(arena.len(), 0);
+    }
+
+    #[test]
+    fn nodes_returns_all() {
+        let mut arena = Arena::new();
+        arena.push(dummy_node()).unwrap();
+        arena.push(dummy_node()).unwrap();
+        let nodes = arena.nodes();
+        assert_eq!(nodes.len(), 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_out_of_bounds_panics() {
+        let arena = Arena::new();
+        arena.get(0); // empty arena — must panic
+    }
+
+    #[test]
+    fn arena_error_is_std_error() {
+        let e = ArenaError::Overflow;
+        let _: &dyn std::error::Error = &e;
+    }
+
+    #[test]
+    fn arena_error_partial_eq() {
+        assert_eq!(ArenaError::Overflow, ArenaError::Overflow);
+    }
+
+    #[test]
+    fn arena_error_clone() {
+        let e = ArenaError::Overflow;
+        assert_eq!(e.clone(), ArenaError::Overflow);
+    }
 }
