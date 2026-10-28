@@ -77,7 +77,7 @@ c-parser = "1.0.0"
 c-parser = { git = "https://github.com/Fishman/c-parser", tag = "v1.0.0" }
 ```
 
-### CLI (`c-parser-cli`)
+### CLI (`c-parser-cli`) (например, в связке с генератором)
 
 ```bash
 cargo install c-parser-cli

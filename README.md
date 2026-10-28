@@ -77,7 +77,7 @@ Or pin to the release tag for `code-bridge` integration:
 c-parser = { git = "https://github.com/Fishman/c-parser", tag = "v1.0.0" }
 ```
 
-### CLI (`c-parser-cli`)
+### CLI (`c-parser-cli`) (for example, in conjunction with a generator)
 
 ```bash
 cargo install c-parser-cli
